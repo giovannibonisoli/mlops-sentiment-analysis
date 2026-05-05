@@ -69,4 +69,4 @@ jobs:
         DATASET_CONFIG: ${{ github.event.inputs.dataset_config || 'sentiment' }}
         TRAIN_SAMPLES:  ${{ github.event.inputs.train_samples  || '1000' }}
         EVAL_SAMPLES:   ${{ github.event.inputs.eval_samples   || '1000' }}
-      run: python src/sentiment/train.py
+      run: python src/train.py
