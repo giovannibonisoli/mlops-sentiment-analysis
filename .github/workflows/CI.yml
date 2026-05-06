@@ -65,8 +65,13 @@ jobs:
 
     - name: Train model
       env:
+        HF_REPO:  ${{ secrets.HF_REPO }}
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      run: python src/train.py
+
+    - name: Run model evaluation
+      env:
         DATASET_NAME:   ${{ github.event.inputs.dataset_name   || 'tweet_eval' }}
         DATASET_CONFIG: ${{ github.event.inputs.dataset_config || 'sentiment' }}
-        TRAIN_SAMPLES:  ${{ github.event.inputs.train_samples  || '1000' }}
-        EVAL_SAMPLES:   ${{ github.event.inputs.eval_samples   || '1000' }}
-      run: python src/train.py
+        MODEL_PATH:     "./models/sentiment_model"
+      run: python src/evaluate.py
