@@ -4,6 +4,8 @@ from huggingface_hub import HfApi
 from transformers import (
     AutoTokenizer,
     AutoModelForSequenceClassification,
+    PreTrainedModel,
+    PreTrainedTokenizer,
     TrainingArguments,
     Trainer
 )
@@ -61,7 +63,21 @@ def compute_metrics(eval_pred):
 # FUNZIONE PER IL CARICAMENTO DEL MODELLO
 # Se il mio modello con un fine-tuning precedente è disponibile su HuggingFace Hub, parto da quello per un ulteriore fine-tuning
 # Altrimenti uso il modello base
-def load_model_for_training():
+def load_model_for_training() -> tuple[PreTrainedModel, PreTrainedTokenizer]:
+    """
+    Load a model and tokenizer for training.
+
+    The function first attempts to load a fine-tuned model
+    from the Hugging Face Hub using the configured repository
+    and authentication token. If no remote model is available,
+    it falls back to the base model defined in BASE_MODEL.
+
+    Returns:
+        tuple[PreTrainedModel, PreTrainedTokenizer]:
+            A tuple containing:
+            - the sequence classification model
+            - the associated tokenizer
+    """
     if HF_REPO and HF_TOKEN:
         try:
             api = HfApi()
@@ -78,7 +94,22 @@ def load_model_for_training():
     return model, tokenizer
 
 # FUNZIONE PER L'ALLENAMENTO DEL MODELLO
-def train():
+def train() -> None:
+    """
+    Train and evaluate the sentiment classification model.
+
+    The function:
+    - loads the dataset
+    - prepares training and validation splits
+    - tokenizes the data
+    - configures Hugging Face Trainer arguments
+    - trains the model
+    - evaluates performance metrics
+    - saves the trained model and tokenizer
+
+    Returns:
+        None
+    """
     dataset = load_dataset(DATASET_NAME, DATASET_CONFIG)
 
     # Caricamento dei dati di training e valutazione
@@ -93,10 +124,6 @@ def train():
     eval_data  = eval_data.map(lambda b: tokenize(b, tokenizer), batched=True)
 
     # Impostazione del formato dei dati di training e valutazione
-    # in formato torch per l'allenamento
-    # input_ids: ID dei token del testo
-    # attention_mask: Maschera di attenzione per i token
-    # label: Label del testo
     train_data.set_format("torch", columns=["input_ids", "attention_mask", "label"])
     eval_data.set_format("torch",  columns=["input_ids", "attention_mask", "label"])
 
