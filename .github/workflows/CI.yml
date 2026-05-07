@@ -74,4 +74,5 @@ jobs:
         DATASET_NAME:   ${{ github.event.inputs.dataset_name   || 'tweet_eval' }}
         DATASET_CONFIG: ${{ github.event.inputs.dataset_config || 'sentiment' }}
         MODEL_PATH:     "./models/sentiment_model"
+        PYTHONPATH:     "."
       run: python src/evaluate.py

@@ -1,6 +1,7 @@
 import os
 from datasets import load_dataset
 from sklearn.metrics import classification_report, accuracy_score
+
 from src.model import load_classifier, predict
 
 DATASET_NAME   = os.getenv("DATASET_NAME", "tweet_eval")
