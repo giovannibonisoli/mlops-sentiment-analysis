@@ -14,8 +14,8 @@ def evaluate(model_path=None):
 
     classifier = load_classifier(model_path)
 
-    y_true = [LABEL_MAP[l] for l in test_data["label"]]
-    y_pred = predict(classifier, test_data["text"])
+    y_true = [LABEL_MAP[l] for l in list(test_data["label"])]
+    y_pred = predict(classifier, list(test_data["text"]))
 
     print(classification_report(y_true, y_pred))
     accuracy = accuracy_score(y_true, y_pred)

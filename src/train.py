@@ -38,7 +38,7 @@ EVAL_SAMPLES   = int(os.getenv("EVAL_SAMPLES", 1000))
 # Il numero di epoche è settato a 3, che rappresenta un valore standard per il fine-tuning 
 # di modelli transformer pre-addestrati, sufficiente a specializzare il modello sui nuovi 
 # dati senza incorrere in overfitting.
-NUM_EPOCHS     = int(os.getenv("NUM_EPOCHS", 3))
+NUM_EPOCHS     = int(os.getenv("NUM_EPOCHS", 1))
 
 # FUNZIONE PER TOKENIZZARE IL TESTO
 def tokenize(batch, tokenizer):
