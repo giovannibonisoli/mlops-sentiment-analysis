@@ -24,6 +24,10 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # Step di scaricamento dell'artifact
+      # Con run-id: ${{ github.event.workflow_run.id }} viene detto di cercare l'artifact nel run della CI che ha triggerato CD
+      # che è esattamente dove si trova il modello. A tal proposito viene passato anche il GITHUB_TOKEN, il quale serve specificamente 
+      # per il download-artifact@v4, pocihé scaricare un artifact prodotto da un workflow diverso richiede autenticazione.
       - name: Download model artifact
         uses: actions/download-artifact@v4
         with:
@@ -32,6 +36,9 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
 
+      # Step di deploy del modello
+      # In questo step sono necessari il nome della repo e un HF_Token con permesso di scrittura,
+      # entrambi presenti nei github secrets
       - name: Push model to HuggingFace Hub
         env:
           HF_TOKEN:   ${{ secrets.HF_TOKEN }}

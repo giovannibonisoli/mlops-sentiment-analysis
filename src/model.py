@@ -2,6 +2,8 @@ from transformers import pipeline
 
 MODEL_NAME = "cardiffnlp/twitter-roberta-base-sentiment-latest"
 
+# Funzione per recuperare il classificatore.
+# Se esiste un modello appena allenato, prende quello 
 def load_classifier(model_path=None):
     source = model_path if model_path else MODEL_NAME
     return pipeline("sentiment-analysis", model=source, tokenizer=source)

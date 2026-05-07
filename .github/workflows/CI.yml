@@ -9,7 +9,8 @@ on:
   pull_request:
     branches: [ "main" ]
 
-
+  # Rendo configurabile manualmente il workflow da interfaccia grafica GITHUB
+  # tramite il workflow_dispatch
   workflow_dispatch:
     inputs:
       dataset_name:
@@ -63,10 +64,12 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
+    # Test sul funzionamento del codice
     - name: Run unit tests
       run: |
         pytest
 
+    # Step per l'allenamento del modello
     - name: Train model
       env:
         HF_REPO:  ${{ secrets.HF_REPO }}
@@ -80,6 +83,7 @@ jobs:
 
       run: python src/train.py
 
+    # Step per la valutazione del modello su un bechmark
     - name: Run model evaluation
       env:
         DATASET_NAME:   ${{ github.event.inputs.dataset_name   || 'tweet_eval' }}
@@ -87,3 +91,15 @@ jobs:
         MODEL_PATH:     "./models/sentiment_model"
         PYTHONPATH:     "."
       run: python src/evaluate.py
+
+    # Creazione di un github artifact per il modello appena addestrato.
+    # Necessario affinché il modello addestrato venga poi scaricato dal workflow di deployment
+    # Trattandosi di un modello di un certo peso, viene inserito un periodo di retention di 1 giorno, 
+    # dopo il quale l'artifact viene automaticamente cancellato, per evitare la sua memorizzazione
+    # permanente.
+    - name: Upload model artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentiment-model
+          path: ./models/sentiment_model/
+          retention-days: 1
