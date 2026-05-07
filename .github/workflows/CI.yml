@@ -1,7 +1,7 @@
 # This workflow will install Python dependencies, run tests and lint with a single version of Python
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
-name: CI — Training e test
+name: CI — Training and evaluation
 
 on:
   push:
@@ -13,21 +13,25 @@ on:
   workflow_dispatch:
     inputs:
       dataset_name:
-        description: "Dataset HuggingFace da usare"
+        description: "Hugging Face dataset to use"
         required: true
         default: "tweet_eval"
       dataset_config:
-        description: "Configurazione del dataset"
+        description: "Dataset configuration"
         required: true
         default: "sentiment"
       train_samples:
-        description: "Numero di esempi per il training"
+        description: "Number of traning samples"
         required: true
         default: "1000"
-      eval_samples:
-        description: "Numero di esempi per la validazione"
+      validation_samples:
+        description: "Number of validation samples"
         required: true
         default: "1000"
+      num_epochs:
+        description: "Number of epochs for training"
+        required: true
+        default: "1"
 
 permissions:
   contents: read
@@ -67,6 +71,13 @@ jobs:
       env:
         HF_REPO:  ${{ secrets.HF_REPO }}
         HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+        DATASET_NAME:   ${{ github.event.inputs.dataset_name   || 'tweet_eval' }}
+        DATASET_CONFIG: ${{ github.event.inputs.dataset_config || 'sentiment' }}
+        TRAIN_SAMPLES:  ${{ github.event.inputs.train_samples  || '1000' }}
+        VALIDATION_SAMPLES:   ${{ github.event.inputs.validation_samples   || '1000' }}
+        NUM_EPOCHS: ${{ github.event.inputs.num_epochs   || '3' }}
+
       run: python src/train.py
 
     - name: Run model evaluation

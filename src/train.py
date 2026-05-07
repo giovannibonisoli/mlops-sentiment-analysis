@@ -33,12 +33,12 @@ TRAIN_SAMPLES  = int(os.getenv("TRAIN_SAMPLES", 1000))
 
 # Il numero di dati di validazione è impostato a 1000 su un validation set di ~1500 esempi
 # per garantire una stima affidabile delle metriche senza usare l'intero set.
-EVAL_SAMPLES   = int(os.getenv("EVAL_SAMPLES", 1000))
+VALIDATION_SAMPLES   = int(os.getenv("VALIDATION_SAMPLES", 1000))
 
 # Il numero di epoche è settato a 3, che rappresenta un valore standard per il fine-tuning 
 # di modelli transformer pre-addestrati, sufficiente a specializzare il modello sui nuovi 
 # dati senza incorrere in overfitting.
-NUM_EPOCHS     = int(os.getenv("NUM_EPOCHS", 1))
+NUM_EPOCHS     = int(os.getenv("NUM_EPOCHS", 3))
 
 # FUNZIONE PER TOKENIZZARE IL TESTO
 def tokenize(batch, tokenizer):
@@ -83,7 +83,7 @@ def train():
 
     # Caricamento dei dati di training e valutazione
     train_data = dataset["train"].shuffle(seed=42).select(range(TRAIN_SAMPLES))
-    eval_data  = dataset["validation"].shuffle(seed=42).select(range(EVAL_SAMPLES))
+    eval_data  = dataset["validation"].shuffle(seed=42).select(range(VALIDATION_SAMPLES))
 
     # Caricamento del modello e del tokenizer
     model, tokenizer = load_model_for_training()
