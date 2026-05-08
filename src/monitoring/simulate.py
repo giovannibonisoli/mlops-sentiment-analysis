@@ -23,8 +23,8 @@ def simulate(samples: int = SIMULATE_SAMPLES) -> None:
         None
     """
     print(f"Loading dataset...")
-    dataset = load_dataset("carblacac/twitter-sentiment")
-    test_data = dataset["test"].shuffle(seed=42).select(range(samples))
+    dataset = load_dataset("tweet_eval", "sentiment")
+    test_data = dataset["test"]
 
     print(f"Loading model...")
     classifier = load_classifier()

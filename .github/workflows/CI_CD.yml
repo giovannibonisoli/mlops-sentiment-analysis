@@ -36,6 +36,8 @@ permissions:
   contents: read
 
 jobs:
+  # JOB 1: UNIT e INTEGRATION TEST
+  # Questi test vengono lanciati dopo ogni push per testare la validita del codice pushato
   test:
 
     runs-on: ubuntu-latest
@@ -62,15 +64,22 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-    # Test sul funzionamento del codice
+    # Istruzione per lanciare il test
     - name: Run unit tests
       run: |
         pytest
 
 
-  train-and-evaluate:
+  # JOB 2: ALLENAMENTO, TEST e DEPLOY del modello
+  # Questo job viene lanciato solo manualmente per effettuare un retraining del modello
+  train-and-deploy:
     runs-on: ubuntu-latest
+
+    # Questa istruzione rende obbligatoria l'esecuzione del JOB 1 (test)
+    # dell'esecuzione di questo job di allenamento
     needs: test
+
+    # La seguente istruzione vincola il job ad essere triggerato manualmente
     if: github.event_name == 'workflow_dispatch'
     
     # Step per l'allenamento del modello
@@ -85,7 +94,6 @@ jobs:
         VALIDATION_SAMPLES:   ${{ github.event.inputs.validation_samples   || '1000' }}
         NUM_EPOCHS: ${{ github.event.inputs.num_epochs   || '3' }}
         PYTHONPATH: "."
-
       run: python src/train.py
 
     # Step per la valutazione del modello su un bechmark
@@ -97,14 +105,14 @@ jobs:
         PYTHONPATH: "."
       run: python src/evaluate.py
 
-    # Creazione di un github artifact per il modello appena addestrato.
-    # Necessario affinché il modello addestrato venga poi scaricato dal workflow di deployment
-    # Trattandosi di un modello di un certo peso, viene inserito un periodo di retention di 1 giorno, 
-    # dopo il quale l'artifact viene automaticamente cancellato, per evitare la sua memorizzazione
-    # permanente.
-    - name: Upload model artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: sentiment-model
-        path: ./models/sentiment_model/
-        retention-days: 1
+    # DEPLOY DEL MODELLO
+    # In questo step sono necessari il nome della repo e un HF_Token con permesso di scrittura,
+    # entrambi presenti nei github secrets
+    - name: Push model to HuggingFace Hub
+      env:
+        HF_TOKEN:   ${{ secrets.HF_TOKEN }}
+        HF_REPO:    ${{ secrets.HF_REPO }}
+        MODEL_PATH: "./models/sentiment_model"
+      run: python src/deploy.py
+
+    

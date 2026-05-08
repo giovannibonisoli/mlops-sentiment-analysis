@@ -16,22 +16,22 @@ import numpy as np
 BASE_MODEL  = "cardiffnlp/twitter-roberta-base-sentiment-latest"
 
 #
-HF_REPO        = os.getenv("HF_REPO", "sentiment-model")
-HF_TOKEN       = os.getenv("HF_TOKEN", None)
+HF_REPO = os.getenv("HF_REPO", "sentiment-model")
+HF_TOKEN = os.getenv("HF_TOKEN", None)
 
 # DIRECTORY DI OUTPUT
 # Questa directory verrà creata se non esiste e verrà usata per salvare temporaneamente il modello che sarà poi usato nello step di valutazione
-OUTPUT_DIR     = "./models/sentiment_model"
+OUTPUT_DIR = "./models/sentiment_model"
 
 # DATASET PER L'ALLENAMENTO E LA VALUTAZIONE
 # Di default viene usato il dataset tweet_eval con la configurazione sentiment
-DATASET_NAME   = os.getenv("DATASET_NAME", "tweet_eval")
+DATASET_NAME = os.getenv("DATASET_NAME", "tweet_eval")
 DATASET_CONFIG = os.getenv("DATASET_CONFIG", "sentiment")
 
 # CONFIGURAZIONE DEL TRAINING
 # Il numero di dati di allenamento viene impostato a 1000
 # come compromesso tra tempo di esecuzione in CI e qualità del training.
-TRAIN_SAMPLES  = int(os.getenv("TRAIN_SAMPLES", 1000))
+TRAIN_SAMPLES = int(os.getenv("TRAIN_SAMPLES", 1000))
 
 # Il numero di dati di validazione è impostato a 1000 su un validation set di ~1500 esempi
 # per garantire una stima affidabile delle metriche senza usare l'intero set.
@@ -40,7 +40,7 @@ VALIDATION_SAMPLES   = int(os.getenv("VALIDATION_SAMPLES", 1000))
 # Il numero di epoche è settato a 3, che rappresenta un valore standard per il fine-tuning 
 # di modelli transformer pre-addestrati, sufficiente a specializzare il modello sui nuovi 
 # dati senza incorrere in overfitting.
-NUM_EPOCHS     = int(os.getenv("NUM_EPOCHS", 3))
+NUM_EPOCHS = int(os.getenv("NUM_EPOCHS", 3))
 
 # FUNZIONE PER TOKENIZZARE IL TESTO
 def tokenize(batch, tokenizer):
