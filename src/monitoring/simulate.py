@@ -73,7 +73,6 @@ def simulate_drift(samples: int = SIMULATE_SAMPLES) -> None:
 
     print("\nRunning monitoring report (drifted distribution)...")
     run_monitoring_report(hours=MONITORING_HOURS)
-    run_monitoring_report(hours=MONITORING_HOURS)
 
     
 if __name__ == "__main__":

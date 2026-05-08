@@ -1,0 +1,39 @@
+name: Monitoring — Sentiment e Drift
+
+on:
+  schedule:
+    - cron: "0 * * * *"  # eseguilo ogni ora
+  workflow_dispatch:     # eseguibile anche manualmente
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run simulation and monitoring
+        env:
+          LOG_FILE: "./monitoring/predictions_log.csv"
+          SIMULATE_SAMPLES: "100"
+          MONITORING_HOURS: "24"
+          CONFIDENCE_THRESHOLD: "0.65"
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_REPO: ${{ secrets.GH_REPO }}
+        run: python src/monitoring/simulate.py
+
+      - name: Upload predictions log
+        uses: actions/upload-artifact@v4
+        with:
+          name: predictions-log
+          path: ./monitoring/predictions_log.csv
+          retention-days: 7

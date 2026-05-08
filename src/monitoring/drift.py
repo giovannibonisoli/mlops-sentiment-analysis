@@ -8,8 +8,8 @@ from datetime import datetime, timedelta, timezone
 LOG_FILE = os.getenv("LOG_FILE", "./monitoring/predictions_log.csv")
 ACCURACY_THRESHOLD = float(os.getenv("ACCURACY_THRESHOLD", 0.60))
 CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", 0.65))
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-GITHUB_REPO  = os.getenv("GITHUB_REPO")
+GH_TOKEN = os.getenv("GH_TOKEN")
+GH_REPO  = os.getenv("GH_REPO")
 PSI_THRESHOLD_WARNING = 0.1   # leggero drift
 PSI_THRESHOLD_ALERT   = 0.2   # drift significativo, considerare retraining
 
@@ -270,13 +270,13 @@ def trigger_retraining(reason: str) -> bool:
         bool:
             True if retraining was triggered successfully, False otherwise.
     """
-    if not GITHUB_TOKEN or not GITHUB_REPO:
-        print("[WARNING] GITHUB_TOKEN or GITHUB_REPO not set! Retraining can't be triggered.")
+    if not GH_TOKEN or not GH_REPO:
+        print("[WARNING] GH_TOKEN or GH_REPO not set! Retraining can't be triggered.")
         return False
 
-    url = f"https://api.github.com/repos/{GITHUB_REPO}/actions/workflows/ci.yml/dispatches"
+    url = f"https://api.github.com/repos/{GH_REPO}/actions/workflows/ci.yml/dispatches"
     headers = {
-        "Authorization": f"token {GITHUB_TOKEN}",
+        "Authorization": f"token {GH_TOKEN}",
         "Accept": "application/vnd.github.v3+json"
     }
     payload = {

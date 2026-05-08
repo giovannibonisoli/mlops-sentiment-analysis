@@ -24,7 +24,24 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      # Step di scaricamento dell'artifact
+
+      # CONTROLLO DELL'ESISTENZA DELL'ARTIFACT
+      # Questo controllo è necessario affinché il workflow non proceda in assenza di un artifact
+      - name: Check if model artifact exists
+        id: check_artifact
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const artifacts = await github.rest.actions.listWorkflowRunArtifacts({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: ${{ github.event.workflow_run.id }}
+            });
+            const model = artifacts.data.artifacts.find(a => a.name === 'sentiment-model');
+            return model ? 'true' : 'false';
+          result-encoding: string
+
+      # SCARICAMENTO DELL'ARTIFACT
       # Con run-id: ${{ github.event.workflow_run.id }} viene detto di cercare l'artifact nel run della CI che ha triggerato CD
       # che è esattamente dove si trova il modello. A tal proposito viene passato anche il GITHUB_TOKEN, il quale serve specificamente 
       # per il download-artifact@v4, pocihé scaricare un artifact prodotto da un workflow diverso richiede autenticazione.
@@ -36,11 +53,12 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ github.event.workflow_run.id }}
 
-      # Step di deploy del modello
+      # DEPLOY DEL MODELLO
       # In questo step sono necessari il nome della repo e un HF_Token con permesso di scrittura,
       # entrambi presenti nei github secrets
       - name: Push model to HuggingFace Hub
         env:
           HF_TOKEN:   ${{ secrets.HF_TOKEN }}
           HF_REPO:    ${{ secrets.HF_REPO }}
+          MODEL_PATH: "./models/sentiment_model"
         run: python src/deploy.py
