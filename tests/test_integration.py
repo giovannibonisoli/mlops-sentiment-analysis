@@ -8,7 +8,7 @@ def test_pipeline_end_to_end():
     sample = dataset["test"].select(range(10))
     
     classifier = load_classifier()
-    predictions = predict(classifier, sample["text"])
+    predictions = predict(classifier, list(sample["text"]))
     
     assert len(predictions) == 10
     assert all(p in ["positive", "negative", "neutral"] for p in predictions)
