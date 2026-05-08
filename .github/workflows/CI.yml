@@ -84,17 +84,17 @@ jobs:
         TRAIN_SAMPLES:  ${{ github.event.inputs.train_samples  || '1000' }}
         VALIDATION_SAMPLES:   ${{ github.event.inputs.validation_samples   || '1000' }}
         NUM_EPOCHS: ${{ github.event.inputs.num_epochs   || '3' }}
-        PYTHONPATH:     "."
+        PYTHONPATH: "."
 
       run: python src/train.py
 
     # Step per la valutazione del modello su un bechmark
     - name: Run model evaluation
       env:
-        DATASET_NAME:   ${{ github.event.inputs.dataset_name   || 'tweet_eval' }}
+        DATASET_NAME: ${{ github.event.inputs.dataset_name   || 'tweet_eval' }}
         DATASET_CONFIG: ${{ github.event.inputs.dataset_config || 'sentiment' }}
-        MODEL_PATH:     "./models/sentiment_model"
-        PYTHONPATH:     "."
+        MODEL_PATH: "./models/sentiment_model"
+        PYTHONPATH: "."
       run: python src/evaluate.py
 
     # Creazione di un github artifact per il modello appena addestrato.

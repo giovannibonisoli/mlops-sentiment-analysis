@@ -27,8 +27,9 @@ jobs:
           SIMULATE_SAMPLES: "100"
           MONITORING_HOURS: "24"
           CONFIDENCE_THRESHOLD: "0.65"
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ secrets.GH_REPO }}
+          PYTHONPATH: "."
         run: python src/monitoring/simulate.py
 
       - name: Upload predictions log
