@@ -15,6 +15,7 @@ def test_pipeline_end_to_end():
 
 def test_evaluate_returns_accuracy():
     """Verifica che evaluate() ritorni un valore di accuracy sensato."""
-    accuracy = evaluate()
+    metrics = evaluate()
+    accuracy = metrics["accuracy"]
     assert 0.0 <= accuracy <= 1.0
     assert accuracy > 0.5  # soglia minima accettabile
