@@ -1,21 +1,39 @@
 import os
 import csv
-from datetime import datetime
+from datetime import datetime, timezone
 from src.model import load_classifier, predict
 
 LOG_FILE  = os.getenv("LOG_FILE", "./monitoring/predictions_log.csv")
 LOG_FIELDS = ["timestamp", "text", "predicted_label", "confidence"]
 
-def init_log():
-    """Crea il file di log se non esiste."""
+def init_log() -> None:
+    """
+    Create the log file if it does not exist.
+
+    Returns:
+        None
+    """
     os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
     if not os.path.exists(LOG_FILE):
         with open(LOG_FILE, "w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=LOG_FIELDS)
             writer.writeheader()
 
+
 def log_predictions(texts, classifier=None):
-    """Logga le predizioni su nuovi testi nel CSV."""
+    """
+    Log predictions for new texts to CSV.
+
+    Args:
+        texts:
+            Single text or iterable of texts to predict.
+        classifier (TextClassificationPipeline, optional):
+            Hugging Face sentiment-analysis pipeline.
+            If None, loads the default classifier.
+
+    Returns:
+        List of raw prediction results from the classifier.
+    """
     if classifier is None:
         classifier = load_classifier()
 
@@ -27,7 +45,7 @@ def log_predictions(texts, classifier=None):
         writer = csv.DictWriter(f, fieldnames=LOG_FIELDS)
         for text, result in zip(texts, raw_results):
             writer.writerow({
-                "timestamp":       datetime.utcnow().isoformat(),
+                "timestamp":       datetime.now(timezone.utc).isoformat(),
                 "text":            text,
                 "predicted_label": result["label"].lower(),
                 "confidence":      round(result["score"], 4)
