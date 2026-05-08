@@ -1,9 +1,10 @@
 import os
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from src.model import load_model_and_tokenizer
 
 MODEL_PATH = os.getenv("MODEL_PATH", "./models/sentiment_model")
 HF_REPO    = os.environ["HF_REPO"]
 HF_TOKEN   = os.environ["HF_TOKEN"]
+
 
 def deploy() -> None:
     """
@@ -28,8 +29,7 @@ def deploy() -> None:
     Returns:
         None
     """
-    model     = AutoModelForSequenceClassification.from_pretrained(MODEL_PATH)
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+    model, tokenizer = load_model_and_tokenizer(MODEL_PATH)
 
     model.push_to_hub(HF_REPO, token=HF_TOKEN)
     tokenizer.push_to_hub(HF_REPO, token=HF_TOKEN)

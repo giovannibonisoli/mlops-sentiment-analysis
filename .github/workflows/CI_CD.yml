@@ -86,32 +86,31 @@ jobs:
     steps:
     - name: Train model
       env:
-        HF_REPO:  ${{ secrets.HF_REPO }}
-        HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        DATASET_NAME:   ${{ github.event.inputs.dataset_name   || 'tweet_eval' }}
+        HF_REPO: ${{ secrets.HF_REPO }}
+        DATASET_NAME: ${{ github.event.inputs.dataset_name   || 'tweet_eval' }}
         DATASET_CONFIG: ${{ github.event.inputs.dataset_config || 'sentiment' }}
-        TRAIN_SAMPLES:  ${{ github.event.inputs.train_samples  || '1000' }}
-        VALIDATION_SAMPLES:   ${{ github.event.inputs.validation_samples   || '1000' }}
+        TRAIN_SAMPLES: ${{ github.event.inputs.train_samples  || '1000' }}
+        VALIDATION_SAMPLES: ${{ github.event.inputs.validation_samples   || '1000' }}
         NUM_EPOCHS: ${{ github.event.inputs.num_epochs   || '3' }}
         PYTHONPATH: "."
       run: python src/train.py
 
     # Step per la valutazione del modello su un bechmark
-    - name: Run model evaluation
+    - name: Evaluate model
       env:
         DATASET_NAME: ${{ github.event.inputs.dataset_name   || 'tweet_eval' }}
         DATASET_CONFIG: ${{ github.event.inputs.dataset_config || 'sentiment' }}
-        MODEL_PATH: "./models/sentiment_model"
+        HF_REPO: ${{ secrets.HF_REPO }}
+        EVALUATE_MODE: "validate"
         PYTHONPATH: "."
       run: python src/evaluate.py
 
-    # DEPLOY DEL MODELLO
-    # In questo step sono necessari il nome della repo e un HF_Token con permesso di scrittura,
-    # entrambi presenti nei github secrets
+    # Step per il deploy del modello
     - name: Push model to HuggingFace Hub
       env:
-        HF_TOKEN:   ${{ secrets.HF_TOKEN }}
-        HF_REPO:    ${{ secrets.HF_REPO }}
+        # Questo step richiede HF_REPO e HF_TOKEN con permesso di scrittura
+        HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        HF_REPO: ${{ secrets.HF_REPO }}
         MODEL_PATH: "./models/sentiment_model"
       run: python src/deploy.py
 

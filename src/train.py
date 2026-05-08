@@ -2,22 +2,21 @@ import os
 from datasets import load_dataset
 from huggingface_hub import HfApi
 from transformers import (
-    AutoTokenizer,
-    AutoModelForSequenceClassification,
-    PreTrainedModel,
-    PreTrainedTokenizer,
     TrainingArguments,
-    Trainer
+    Trainer,
+    PreTrainedModel,
+    PreTrainedTokenizer
 )
 from sklearn.metrics import accuracy_score, f1_score
 import numpy as np
+
+from src.model import load_model_and_tokenizer
 
 # Modello base
 BASE_MODEL  = "cardiffnlp/twitter-roberta-base-sentiment-latest"
 
 #
 HF_REPO = os.getenv("HF_REPO", "sentiment-model")
-HF_TOKEN = os.getenv("HF_TOKEN", None)
 
 # DIRECTORY DI OUTPUT
 # Questa directory verrà creata se non esiste e verrà usata per salvare temporaneamente il modello che sarà poi usato nello step di valutazione
@@ -35,7 +34,7 @@ TRAIN_SAMPLES = int(os.getenv("TRAIN_SAMPLES", 1000))
 
 # Il numero di dati di validazione è impostato a 1000 su un validation set di ~1500 esempi
 # per garantire una stima affidabile delle metriche senza usare l'intero set.
-VALIDATION_SAMPLES   = int(os.getenv("VALIDATION_SAMPLES", 1000))
+VALIDATION_SAMPLES = int(os.getenv("VALIDATION_SAMPLES", 1000))
 
 # Il numero di epoche è settato a 3, che rappresenta un valore standard per il fine-tuning 
 # di modelli transformer pre-addestrati, sufficiente a specializzare il modello sui nuovi 
@@ -59,39 +58,6 @@ def compute_metrics(eval_pred):
         "accuracy": accuracy_score(labels, preds),
         "macro_f1": f1_score(labels, preds, average="macro")
     }
-
-# FUNZIONE PER IL CARICAMENTO DEL MODELLO
-# Se il mio modello con un fine-tuning precedente è disponibile su HuggingFace Hub, parto da quello per un ulteriore fine-tuning
-# Altrimenti uso il modello base
-def load_model_for_training() -> tuple[PreTrainedModel, PreTrainedTokenizer]:
-    """
-    Load a model and tokenizer for training.
-
-    The function first attempts to load a fine-tuned model
-    from the Hugging Face Hub using the configured repository
-    and authentication token. If no remote model is available,
-    it falls back to the base model defined in BASE_MODEL.
-
-    Returns:
-        tuple[PreTrainedModel, PreTrainedTokenizer]:
-            A tuple containing:
-            - the sequence classification model
-            - the associated tokenizer
-    """
-    if HF_REPO and HF_TOKEN:
-        try:
-            api = HfApi()
-            api.repo_info(repo_id=HF_REPO, token=HF_TOKEN)
-            print(f"Modello trovato su {HF_REPO}!")
-            tokenizer = AutoTokenizer.from_pretrained(HF_REPO, token=HF_TOKEN)
-            model = AutoModelForSequenceClassification.from_pretrained(HF_REPO, token=HF_TOKEN)
-            return model, tokenizer
-        except Exception:
-            print(f"Nessun modello trovato su HuggingFace Hub. Utilizzo {BASE_MODEL}")
-    
-    tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
-    model = AutoModelForSequenceClassification.from_pretrained(BASE_MODEL, num_labels=3)
-    return model, tokenizer
 
 # FUNZIONE PER L'ALLENAMENTO DEL MODELLO
 def train() -> None:
@@ -117,7 +83,17 @@ def train() -> None:
     eval_data  = dataset["validation"].shuffle(seed=42).select(range(VALIDATION_SAMPLES))
 
     # Caricamento del modello e del tokenizer
-    model, tokenizer = load_model_for_training()
+    if HF_REPO:
+        try:
+            api = HfApi()
+            api.repo_info(repo_id=HF_REPO)
+            print(f"Modello trovato su {HF_REPO}!")
+            model, tokenizer = load_model_and_tokenizer(HF_REPO)
+        except Exception:
+            print(f"Nessun modello trovato su HuggingFace Hub. Utilizzo {BASE_MODEL}")
+            model, tokenizer = load_model_and_tokenizer()
+    else:
+        model, tokenizer = load_model_and_tokenizer()
 
     # Tokenizzazione dei dati di training e valutazione
     train_data = train_data.map(lambda b: tokenize(b, tokenizer), batched=True)
@@ -165,7 +141,7 @@ def train() -> None:
     # salvataggio temporaneo del modello allenato
     model.save_pretrained(OUTPUT_DIR)
     tokenizer.save_pretrained(OUTPUT_DIR)
-    print(f"Modello salvato in {OUTPUT_DIR}")
+    print(f"Model saved in {OUTPUT_DIR}")
 
 if __name__ == "__main__":
     train()

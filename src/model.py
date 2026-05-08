@@ -1,9 +1,29 @@
-from transformers import pipeline
+from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
 from transformers.pipelines import TextClassificationPipeline
+from transformers import PreTrainedModel, PreTrainedTokenizer
 
 from typing import Iterable
 
 MODEL_NAME = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+
+
+def load_model_and_tokenizer(model_path: str | None = None) -> tuple[PreTrainedModel, PreTrainedTokenizer]:
+    """
+    Load a model and tokenizer for training.
+
+    Args:
+        model_path (str | None, optional):
+            Local path or Hugging Face model identifier.
+            If None, the default MODEL_NAME is used.
+
+    Returns:
+        tuple[PreTrainedModel, PreTrainedTokenizer]:
+            A tuple containing the model and tokenizer.
+    """
+    source = model_path if model_path else MODEL_NAME
+    tokenizer = AutoTokenizer.from_pretrained(source)
+    model = AutoModelForSequenceClassification.from_pretrained(source, num_labels=3)
+    return model, tokenizer
 
 
 def load_classifier(model_path: str | None = None) -> TextClassificationPipeline:
