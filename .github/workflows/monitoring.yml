@@ -1,8 +1,6 @@
 name: Monitoring — Sentiment e Drift
 
 on:
-  schedule:
-  #  - cron: "0 * * * *"  # Viene eseguito ogni ora
   workflow_dispatch:       # Eseguibile anche manualmente
 
 jobs:
