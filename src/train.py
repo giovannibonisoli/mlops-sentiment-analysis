@@ -3,9 +3,7 @@ from datasets import load_dataset
 from huggingface_hub import HfApi
 from transformers import (
     TrainingArguments,
-    Trainer,
-    PreTrainedModel,
-    PreTrainedTokenizer
+    Trainer
 )
 from sklearn.metrics import accuracy_score, f1_score
 import numpy as np
@@ -15,7 +13,7 @@ from src.model import load_model_and_tokenizer
 # Modello base
 BASE_MODEL  = "cardiffnlp/twitter-roberta-base-sentiment-latest"
 
-#
+# Repository hugging face del modello in produzione
 HF_REPO = os.getenv("HF_REPO", "sentiment-model")
 
 # DIRECTORY DI OUTPUT
@@ -41,14 +39,14 @@ VALIDATION_SAMPLES = int(os.getenv("VALIDATION_SAMPLES", 1000))
 # dati senza incorrere in overfitting.
 NUM_EPOCHS = int(os.getenv("NUM_EPOCHS", 3))
 
-# FUNZIONE PER TOKENIZZARE IL TESTO
+# TOKENIZZAZIONE IL TESTO
 def tokenize(batch, tokenizer):
 
     # L'impostazione prevede di troncare il testo se supera la lunghezza massima di 512 token perché è la lunghezza massima supportata dal modello base
     # Il padding è impostato a max_length per garantire che tutti i batch abbiano la stessa lunghezza
     return tokenizer(batch["text"], truncation=True, max_length=512, padding="max_length")
 
-# FUNZIONE DI CALCOLO DELLE METRICHE
+# CALCOLO DELLE METRICHE
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
     preds = np.argmax(logits, axis=-1)
@@ -59,7 +57,7 @@ def compute_metrics(eval_pred):
         "macro_f1": f1_score(labels, preds, average="macro")
     }
 
-# FUNZIONE PER L'ALLENAMENTO DEL MODELLO
+# ALLENAMENTO DEL MODELLO
 def train() -> None:
     """
     Train and evaluate the sentiment classification model.
@@ -107,7 +105,7 @@ def train() -> None:
     # Viene scelto 16 come batch size in quanto standard per il fine-tuning di modelli transformer pre-addestrati.
     # Tramite eval_strategy="epoch" e save_strategy="epoch" il modello viene valutato e salvato alla fine di ogni epoca.
     # Tramite load_best_model_at_end=True il modello con le migliori metriche viene caricato alla fine dell'allenamento,
-    # Questo viene selezionato in base a macro_f1, poiché il dataset è sbilanciato e l'accuracy rischia di essere fuorviante. 
+    # Questo viene selezionato in base a macro_f1, poiché in caso di dataste sbilanciato e l'accuracy rischia di essere fuorviante. 
     args = TrainingArguments(
         output_dir=OUTPUT_DIR,
         num_train_epochs=NUM_EPOCHS,

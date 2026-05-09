@@ -10,6 +10,9 @@ HF_REPO = os.getenv("HF_REPO")
 LABEL_MAP = {0: "negative", 1: "neutral", 2: "positive"}
 
 
+# FUNZIONE PER LA VALUTAZIONE 
+# Carica il dataset di test, esegue le predizioni usando il classificatore specificato
+# e restituisce un dizionario con accuratezza e macro F1, stampando anche un report dettagliato
 def evaluate(model_path: str | None = None) -> dict[str, float]:
     """
     Evaluate a sentiment classification model on the test set.
@@ -29,7 +32,7 @@ def evaluate(model_path: str | None = None) -> dict[str, float]:
     """
     dataset = load_dataset(DATASET_NAME, DATASET_CONFIG)
 
-    # Evaluation is performed on the full test set for more reliable results
+    # La valutazione viene effettuata sull'intero test set per maggiore affidabilità
     test_data = dataset["test"]
 
     classifier = load_classifier(model_path)
@@ -39,7 +42,7 @@ def evaluate(model_path: str | None = None) -> dict[str, float]:
 
     print(classification_report(y_true, y_pred))
     accuracy = accuracy_score(y_true, y_pred)
-    # Macro F1 is returned because it's more representative on imbalanced datasets
+
     macro_f1 = f1_score(y_true, y_pred, average="macro")
     print(f"Accuracy: {accuracy:.2f}")
     print(f"Macro F1: {macro_f1:.4f}")
@@ -47,6 +50,11 @@ def evaluate(model_path: str | None = None) -> dict[str, float]:
     return {"accuracy": accuracy, "macro_f1": macro_f1}
 
 
+# FUNZIONE PER LA VALIDAZIONE DI UN MODELLO
+# Confronta le performance (macro F1) del modello appena addestrato con quelle del modello
+# attualmente in produzione. Se il nuovo modello non è superiore, termina il processo con errore 
+# che farà terminare la pipeline senza procedere con il deploy.
+# Se non esiste ancora un modello in produzione, procede automaticamente con il deploy.
 def validate() -> None:
     """
     Validate that a newly trained model outperforms the production model.
@@ -69,6 +77,7 @@ def validate() -> None:
         prod_f1 = prod_metrics["macro_f1"]
         print(f"Production model — Macro F1: {prod_f1:.4f}")
 
+        # Se
         if new_f1 > prod_f1:
             print(f"[OK] New model is better ({new_f1:.4f} > {prod_f1:.4f}). Proceeding with deploy.")
         else:
@@ -76,9 +85,14 @@ def validate() -> None:
             sys.exit(1)
 
     except Exception:
+
+        # Se non esiste nessun modello su Hugging Face, si procede al deploy del modello corrente
         print("[INFO] No production model found. Proceeding with deploy.")
 
 
+# Legge la variabile d'ambiente EVALUATE_MODE per decidere
+# se eseguire la validazione (confronto con produzione) o la sola valutazione locale.
+# Di default esegue la valutazione semplice sul modello salvato in "./models/sentiment_model".
 if __name__ == "__main__":
     mode = os.getenv("EVALUATE_MODE", "evaluate")
     if mode == "validate":

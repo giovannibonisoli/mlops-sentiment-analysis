@@ -6,7 +6,9 @@ from typing import Iterable
 
 MODEL_NAME = "cardiffnlp/twitter-roberta-base-sentiment-latest"
 
-
+# CARICAMENTO DI UN MODELLO TRANSFORMER E DEL SUO TOKENIZER
+# Carica un modello transformer e il relativo tokenizer per l'addestramento 
+# Se model_path è None, utilizza il modello predefinito da Hugging Face Hub
 def load_model_and_tokenizer(model_path: str | None = None) -> tuple[PreTrainedModel, PreTrainedTokenizer]:
     """
     Load a model and tokenizer for training.
@@ -25,7 +27,9 @@ def load_model_and_tokenizer(model_path: str | None = None) -> tuple[PreTrainedM
     model = AutoModelForSequenceClassification.from_pretrained(source, num_labels=3)
     return model, tokenizer
 
-
+# CARICAMENTO DI UNA PIPELINE DI TEXT CLASSIFICATION
+# Crea e restituisce una pipeline Hugging Face per sentiment-analysis pronta all'uso
+# Il modello e il tokenizer vengono caricati dalla stessa sorgente (locale o Hub)
 def load_classifier(model_path: str | None = None) -> TextClassificationPipeline:
     """
     Load a Hugging Face sentiment-analysis pipeline.
@@ -48,7 +52,9 @@ def load_classifier(model_path: str | None = None) -> TextClassificationPipeline
         tokenizer=source
     )
 
-
+# PREDIZIONE DI UN CLASSIFICATORE
+# Esegue predizioni sentimentali su uno o più testi usando il classificatore fornito
+# Gestisce sia input singolo (stringa) che multiplo (iterabile) e restituisce i label in lowercase
 def predict(classifier: TextClassificationPipeline, texts: str | Iterable[str]) -> list[str]:
     """
     Predict sentiment labels for one or more texts.

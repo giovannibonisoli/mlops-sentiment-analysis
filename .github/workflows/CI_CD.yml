@@ -1,14 +1,15 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+name: CI — Training, evaluation and deploy
 
-name: CI — Training and evaluation
-
+# Definisce quando eseguire la pipeline
 on:
+  # Trigger automatici: su ogni push o pull request verso il branch main
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
+  # Trigger manuale: permette di eseguire un retraining con parametri personalizzati
+  # Utile per sperimentare con diverse dimensioni del dataset o numero di epoche
   workflow_dispatch:
     inputs:
       dataset_name:
@@ -30,14 +31,19 @@ on:
       num_epochs:
         description: "Number of epochs for training"
         required: true
-        default: "1"
+        default: "3"
 
 permissions:
-  contents: read
+  contents: read # Solo lettura del repository, sufficiente per CI/CD
 
 jobs:
-  # JOB 1: UNIT e INTEGRATION TEST
-  # Questi test vengono lanciati dopo ogni push per testare la validita del codice pushato
+  # ============================================================
+  # JOB 1: TEST AUTOMATICI (UNIT E INTEGRATION)
+  # ============================================================
+  # SCOPO: Verificare che il codice sia funzionalmente corretto
+  # TRIGGER: Push e pull_request (automatico)
+  # NOTE: Viene eseguito ad ogni push perché è sempre utile valutare
+  # la correttezza del codice, forte anche del fatto che è un job veloce.
   test:
 
     runs-on: ubuntu-latest
@@ -50,13 +56,15 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: "3.10"
-        
+    
+    # Installazione delle dipendenze
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install flake8 pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         
+    # Linting: controlla errori di sintassi e stile
     - name: Lint with flake8
       run: |
         # stop the build if there are Python syntax errors or undefined names
@@ -64,25 +72,30 @@ jobs:
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-    # Istruzione per lanciare il test
-    - name: Run unit tests
+    # Esecuzione di unit test e integration test con pytest
+    - name: Run tests
       run: |
         pytest
 
 
-  # JOB 2: ALLENAMENTO, TEST e DEPLOY del modello
-  # Questo job viene lanciato solo manualmente per effettuare un retraining del modello
+  # ============================================================
+  # JOB 2: TRAINING, VALIDAZIONE E DEPLOY
+  # ============================================================
+  # SCOPO: Addestrare un nuovo modello e pubblicarlo se è migliore del modello già pubblicaot
+  # TRIGGER: Solo manuale (workflow_dispatch) - NON su push/pull_request
+  # NOTE: Richiede ~30-60 min e consuma risorse GPU/CPU, motivo per il quale non ha senso lanciarlo ad ogni push
   train-and-deploy:
     runs-on: ubuntu-latest
 
     # Questa istruzione rende obbligatoria l'esecuzione del JOB 1 (test)
-    # dell'esecuzione di questo job di allenamento
+    # Se i test falliscono, l'allenamento non parte. 
+    # Ciò permette di prevenire il deploy di codice rotto
     needs: test
 
-    # La seguente istruzione vincola il job ad essere triggerato manualmente
+    # VINCOLO CRITICO: Questo job parte ESCLUSIVAMENTE su trigger manuale
+    # Su push/pull_request viene saltato per risparmiare risorse
     if: github.event_name == 'workflow_dispatch'
     
-    # Step per l'allenamento del modello
     steps:
     - name: Checkout repo
       uses: actions/checkout@v4
@@ -95,34 +108,40 @@ jobs:
     - name: Install dependencies
       run: pip install -r requirements.txt
 
+    # ===== STEP 1: ALLENAMENTO =====
+    # Addestra il modello usando i parametri specificati manualmente
+    # Salva il modello in ./models/sentiment_model
     - name: Train model
       env:
-        HF_REPO: ${{ secrets.HF_REPO }}
+        HF_REPO: ${{ secrets.HF_REPO }} # Repository Hugging Face di destinazione
         DATASET_NAME: ${{ github.event.inputs.dataset_name   || 'tweet_eval' }}
         DATASET_CONFIG: ${{ github.event.inputs.dataset_config || 'sentiment' }}
         TRAIN_SAMPLES: ${{ github.event.inputs.train_samples  || '1000' }}
         VALIDATION_SAMPLES: ${{ github.event.inputs.validation_samples   || '1000' }}
         NUM_EPOCHS: ${{ github.event.inputs.num_epochs   || '3' }}
-        PYTHONPATH: ${{ github.workspace }}
+        PYTHONPATH: ${{ github.workspace }} # Permette import da src/
       run: python src/train.py
 
-    # Step per la valutazione del modello su un bechmark
+    # ===== STEP 2: VALIDAZIONE =====
+    # Confronta il nuovo modello con quello in produzione (su HF Hub)
+    # Se il nuovo modello non è migliore, lo script fallisce e blocca il deploy
     - name: Evaluate model
       env:
         DATASET_NAME: ${{ github.event.inputs.dataset_name   || 'tweet_eval' }}
         DATASET_CONFIG: ${{ github.event.inputs.dataset_config || 'sentiment' }}
         HF_REPO: ${{ secrets.HF_REPO }}
-        EVALUATE_MODE: "validate"
+        EVALUATE_MODE: "validate" # Modalità di confronto con produzione
         PYTHONPATH: ${{ github.workspace }}
       run: python src/evaluate.py
 
-    # Step per il deploy del modello
+    # ===== STEP 3: DEPLOY =====
+    # Pubblica il nuovo modello su Hugging Face Hub
+    # Richiede HF_TOKEN con permessi di scrittura (configurato nei GitHub Secrets)
     - name: Push model to HuggingFace Hub
       env:
-        # Questo step richiede HF_REPO e HF_TOKEN con permesso di scrittura
-        HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        HF_TOKEN: ${{ secrets.HF_TOKEN }} # Questo step richiede HF_TOKEN con permesso di scrittura
         HF_REPO: ${{ secrets.HF_REPO }}
-        MODEL_PATH: "./models/sentiment_model"
+        MODEL_PATH: "./models/sentiment_model" # Path dove train.py ha salvato il modello
         PYTHONPATH: ${{ github.workspace }}
       run: python src/deploy.py
 
