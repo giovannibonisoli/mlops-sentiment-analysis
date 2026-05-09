@@ -31,7 +31,7 @@ def simulate(samples: int = SIMULATE_SAMPLES) -> None:
     classifier = load_classifier()
 
     print(f"\nSimulating {samples} new texts...\n")
-    log_predictions(test_data["text"], classifier=classifier)
+    log_predictions(list(test_data["text"]), classifier=classifier)
     print(f"{samples} predictions logged to {os.getenv('LOG_FILE', './monitoring/predictions_log.csv')}")
 
     print("\nRunning monitoring report...")
@@ -73,7 +73,7 @@ def simulate_drift(samples: int = SIMULATE_SAMPLES) -> None:
     classifier = load_classifier()
 
     print(f"\nSimulating drift with {len(drifted)} imbalanced texts...\n")
-    log_predictions(drifted["text"], classifier=classifier)
+    log_predictions(list(drifted["text"]), classifier=classifier)
 
     print("\nRunning monitoring report (drifted distribution)...")
     run_monitoring_report(hours=MONITORING_HOURS)
