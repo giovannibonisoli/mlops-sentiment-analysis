@@ -84,6 +84,9 @@ jobs:
     
     # Step per l'allenamento del modello
     steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+
     - name: Train model
       env:
         HF_REPO: ${{ secrets.HF_REPO }}
