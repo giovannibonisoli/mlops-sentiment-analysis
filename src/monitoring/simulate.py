@@ -7,6 +7,7 @@ from src.model import load_classifier
 
 SIMULATE_SAMPLES = int(os.getenv("SIMULATE_SAMPLES", 100))
 MONITORING_HOURS = int(os.getenv("MONITORING_HOURS", 24))
+SIMULATE_SEED = int(os.getenv("SIMULATE_SEED", 42))
 
 
 def simulate(samples: int = SIMULATE_SAMPLES) -> None:
@@ -25,7 +26,7 @@ def simulate(samples: int = SIMULATE_SAMPLES) -> None:
     """
     print("Loading dataset...")
     dataset = load_dataset("tweet_eval", "sentiment")
-    test_data = dataset["test"].shuffle(seed=42).select(range(samples))
+    test_data = dataset["test"].shuffle(seed=SIMULATE_SEED).select(range(samples))
 
     print("Loading model...")
     classifier = load_classifier()
@@ -67,7 +68,7 @@ def simulate_drift(samples: int = SIMULATE_SAMPLES) -> None:
         negative.select(range(min(70, len(negative)))),
         neutral.select(range(min(20, len(neutral)))),
         positive.select(range(min(10, len(positive))))
-    ]).shuffle(seed=42)
+    ]).shuffle(seed=SIMULATE_SEED)
 
     print("Loading model...")
     classifier = load_classifier()

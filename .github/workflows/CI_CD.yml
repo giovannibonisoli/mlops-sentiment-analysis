@@ -32,6 +32,10 @@ on:
         description: "Number of epochs for training"
         required: true
         default: "3"
+      train_seed:
+        description: "Random seed for training"
+        required: true
+        default: "42"
 
 permissions:
   contents: read # Solo lettura del repository, sufficiente per CI/CD
@@ -119,6 +123,7 @@ jobs:
         TRAIN_SAMPLES: ${{ github.event.inputs.train_samples  || '1000' }}
         VALIDATION_SAMPLES: ${{ github.event.inputs.validation_samples   || '1000' }}
         NUM_EPOCHS: ${{ github.event.inputs.num_epochs   || '3' }}
+        TRAIN_SEED: ${{ github.event.inputs.train_seed   || '42' }}
         PYTHONPATH: ${{ github.workspace }} # Permette import da src/
       run: python src/train.py
 

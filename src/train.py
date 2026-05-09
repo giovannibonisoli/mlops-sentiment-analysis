@@ -34,10 +34,13 @@ TRAIN_SAMPLES = int(os.getenv("TRAIN_SAMPLES", 1000))
 # per garantire una stima affidabile delle metriche senza usare l'intero set.
 VALIDATION_SAMPLES = int(os.getenv("VALIDATION_SAMPLES", 1000))
 
-# Il numero di epoche è settato a 3, che rappresenta un valore standard per il fine-tuning 
-# di modelli transformer pre-addestrati, sufficiente a specializzare il modello sui nuovi 
+# Il numero di epoche è settato a 3, che rappresenta un valore standard per il fine-tuning
+# di modelli transformer pre-addestrati, sufficiente a specializzare il modello sui nuovi
 # dati senza incorrere in overfitting.
 NUM_EPOCHS = int(os.getenv("NUM_EPOCHS", 3))
+
+# Seed per la randomizzazione del dataset
+TRAIN_SEED = int(os.getenv("TRAIN_SEED", 42))
 
 # TOKENIZZAZIONE IL TESTO
 def tokenize(batch, tokenizer):
@@ -77,8 +80,8 @@ def train() -> None:
     dataset = load_dataset(DATASET_NAME, DATASET_CONFIG)
 
     # Caricamento dei dati di training e valutazione
-    train_data = dataset["train"].shuffle(seed=42).select(range(TRAIN_SAMPLES))
-    eval_data  = dataset["validation"].shuffle(seed=42).select(range(VALIDATION_SAMPLES))
+    train_data = dataset["train"].shuffle(seed=TRAIN_SEED).select(range(TRAIN_SAMPLES))
+    eval_data  = dataset["validation"].shuffle(seed=TRAIN_SEED).select(range(VALIDATION_SAMPLES))
 
     # Caricamento del modello e del tokenizer
     if HF_REPO:
