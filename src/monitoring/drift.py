@@ -1,17 +1,13 @@
 import os
 import csv
-import requests
 import numpy as np
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 
 LOG_FILE = os.getenv("LOG_FILE", "./monitoring/predictions_log.csv")
-ACCURACY_THRESHOLD = float(os.getenv("ACCURACY_THRESHOLD", 0.60))
 CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", 0.65))
-GH_TOKEN = os.getenv("GH_TOKEN")
-GH_REPO  = os.getenv("GH_REPO")
 PSI_THRESHOLD_WARNING = 0.1   # leggero drift
-PSI_THRESHOLD_ALERT   = 0.2   # drift significativo, considerare retraining
+PSI_THRESHOLD_ALERT = 0.2   # drift significativo, considerare retraining
 
 # Distribuzione di riferimento dalla valutazione baseline
 BASELINE_DISTRIBUTION = {
@@ -39,6 +35,8 @@ def load_recent_logs(hours: int = 24) -> list[dict[str, str]]:
         reader = csv.DictReader(f)
         for row in reader:
             ts = datetime.fromisoformat(row["timestamp"])
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
             if ts >= cutoff:
                 rows.append(row)
     return rows
@@ -65,6 +63,8 @@ def load_baseline_logs(hours: int = 24) -> list[dict[str, str]]:
         reader = csv.DictReader(f)
         for row in reader:
             ts = datetime.fromisoformat(row["timestamp"])
+            if ts.tzinfo is None:
+                ts = ts.replace(tzinfo=timezone.utc)
             if cutoff_start <= ts < cutoff_end:
                 rows.append(row)
     return rows
@@ -103,16 +103,15 @@ def compute_avg_confidence(rows: list[dict[str, str]]) -> float:
         return 0.0
     return round(sum(float(row["confidence"]) for row in rows) / len(rows), 4)
 
-
 def compute_psi(baseline_scores: list[float], current_scores: list[float], bins: int = 10) -> float:
     """
     Compute the Population Stability Index (PSI) between baseline and current
     confidence score distributions.
 
     Interpretation:
-        - PSI < 0.1:  stable distribution
+        - PSI < 0.1:   stable distribution
         - PSI 0.1-0.2: slight drift, monitor
-        - PSI > 0.2: significant drift, consider retraining
+        - PSI > 0.2:   significant drift, consider retraining
 
     Uses confidence score distribution instead of labels alone because it
     provides an earlier signal of drift — the model may become uncertain
@@ -133,7 +132,6 @@ def compute_psi(baseline_scores: list[float], current_scores: list[float], bins:
     baseline_scores = np.array(baseline_scores, dtype=float)
     current_scores  = np.array(current_scores,  dtype=float)
 
-    # Calcola i bin sulla distribuzione baseline
     breakpoints = np.linspace(0, 1, bins + 1)
 
     baseline_counts = np.histogram(baseline_scores, bins=breakpoints)[0]
@@ -147,11 +145,11 @@ def compute_psi(baseline_scores: list[float], current_scores: list[float], bins:
     psi = np.sum((current_pct - baseline_pct) * np.log(current_pct / baseline_pct))
     return round(float(psi), 4)
 
-
 def check_distribution_shift(current_distribution: dict[str, float]) -> dict[str, dict[str, float]]:
     """
     Compare the current sentiment distribution against the baseline distribution.
-    A shift is reported when the difference between the current and baseline percentage exceeds 15%.
+    A shift is reported when the difference between the current and baseline
+    percentage exceeds 15%.
 
     Args:
         current_distribution (dict[str, float]):
@@ -176,15 +174,15 @@ def check_distribution_shift(current_distribution: dict[str, float]) -> dict[str
 
 def run_monitoring_report(hours: int = 24) -> None:
     """
-    Generate a monitoring report for recent model predictions
-    and triggers retraining when necessary.
+    Generate a monitoring report for recent model predictions.
 
     The report includes:
     - total predictions
     - sentiment distribution
     - average confidence score
     - distribution shift detection
-    - confidence threshold alerts
+    - PSI drift detection
+    - retraining recommendations
 
     Args:
         hours (int, optional):
@@ -249,48 +247,12 @@ def run_monitoring_report(hours: int = 24) -> None:
     else:
         print("\n[INFO] Insufficient baseline data for PSI calculation.")
 
-    # Trigger retraining se necessario
+    # Notifica retraining se necessario
     if retraining_needed:
         reason = " | ".join(retraining_reasons)
-        trigger_retraining(reason)
-
-
-def trigger_retraining(reason: str) -> bool:
-    """
-    Trigger the CI workflow via GitHub API to start retraining.
-
-    Called automatically when significant drift or model performance
-    degradation is detected.
-
-    Args:
-        reason (str):
-            Description of why retraining is being triggered.
-
-    Returns:
-        bool:
-            True if retraining was triggered successfully, False otherwise.
-    """
-    if not GH_TOKEN or not GH_REPO:
-        print("[WARNING] GH_TOKEN or GH_REPO not set! Retraining can't be triggered.")
-        return False
-
-    url = f"https://api.github.com/repos/{GH_REPO}/actions/workflows/ci.yml/dispatches"
-    headers = {
-        "Authorization": f"token {GH_TOKEN}",
-        "Accept": "application/vnd.github.v3+json"
-    }
-    payload = {
-        "ref": "main"
-    }
-
-    response = requests.post(url, json=payload, headers=headers)
-
-    if response.status_code == 204:
-        print(f"[OK] Retraining triggered. Reason: {reason}")
-        return True
-    else:
-        print(f"[ERROR] Unable to trigger retraining: {response.status_code}")
-        return False
+        print(f"\n[ACTION REQUIRED] Retraining recommended.")
+        print(f"Reason: {reason}")
+        print(f"To trigger retraining, run the CI workflow manually from GitHub Actions.")
 
 if __name__ == "__main__":
     run_monitoring_report()

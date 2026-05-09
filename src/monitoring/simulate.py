@@ -1,4 +1,5 @@
 import os
+import sys
 from datasets import load_dataset, concatenate_datasets
 from src.monitoring.monitor import log_predictions
 from src.monitoring.drift import run_monitoring_report
@@ -12,7 +13,7 @@ def simulate(samples: int = SIMULATE_SAMPLES) -> None:
     """
     Simulate incoming social media texts for monitoring.
 
-    Uses the twitter-sentiment test set as data source. In a real system,
+    Uses the tweet_eval test set as data source. In a real system,
     these texts would come from monitored social media APIs.
 
     Args:
@@ -22,11 +23,11 @@ def simulate(samples: int = SIMULATE_SAMPLES) -> None:
     Returns:
         None
     """
-    print(f"Loading dataset...")
+    print("Loading dataset...")
     dataset = load_dataset("tweet_eval", "sentiment")
-    test_data = dataset["test"]
+    test_data = dataset["test"].shuffle(seed=42).select(range(samples))
 
-    print(f"Loading model...")
+    print("Loading model...")
     classifier = load_classifier()
 
     print(f"\nSimulating {samples} new texts...\n")
@@ -37,14 +38,13 @@ def simulate(samples: int = SIMULATE_SAMPLES) -> None:
     run_monitoring_report(hours=MONITORING_HOURS)
 
 
-
 def simulate_drift(samples: int = SIMULATE_SAMPLES) -> None:
     """
     Simulate distribution drift by oversampling the negative class.
 
-    Produces an artificially imbalanced distribution (e.g., 70% negative)
-    compared to the baseline (32% negative), ensuring drift is detected
-    and retraining is triggered.
+    Produces an artificially imbalanced distribution (70% negative)
+    compared to the baseline (32% negative), simulating a reputational
+    crisis and ensuring drift is detected.
 
     Args:
         samples (int, optional):
@@ -53,6 +53,7 @@ def simulate_drift(samples: int = SIMULATE_SAMPLES) -> None:
     Returns:
         None
     """
+    print("Loading dataset for drift simulation...")
     dataset = load_dataset("tweet_eval", "sentiment")
     test_data = dataset["test"]
 
@@ -68,15 +69,17 @@ def simulate_drift(samples: int = SIMULATE_SAMPLES) -> None:
         positive.select(range(min(10, len(positive))))
     ]).shuffle(seed=42)
 
+    print("Loading model...")
     classifier = load_classifier()
+
+    print(f"\nSimulating drift with {len(drifted)} imbalanced texts...\n")
     log_predictions(drifted["text"], classifier=classifier)
 
     print("\nRunning monitoring report (drifted distribution)...")
     run_monitoring_report(hours=MONITORING_HOURS)
 
-    
+
 if __name__ == "__main__":
-    import sys
     if len(sys.argv) > 1 and sys.argv[1] == "drift":
         simulate_drift()
     else:

@@ -3,7 +3,7 @@ import csv
 from datetime import datetime, timezone
 from src.model import load_classifier
 
-LOG_FILE  = os.getenv("LOG_FILE", "./monitoring/predictions_log.csv")
+LOG_FILE   = os.getenv("LOG_FILE", "./monitoring/predictions_log.csv")
 LOG_FIELDS = ["timestamp", "text", "predicted_label", "confidence"]
 
 def init_log() -> None:
