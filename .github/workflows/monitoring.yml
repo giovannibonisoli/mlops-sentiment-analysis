@@ -1,18 +1,24 @@
 name: Monitoring — Sentiment e Drift
 
 on:
-  workflow_dispatch:       # Eseguibile anche manualmente
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+    inputs:
+      force_drift:
+        description: "Simulate reputational crisis"
+        type: boolean
+        default: false
 
 jobs:
   monitor:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
       - name: Set up Python 3.10
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
@@ -21,15 +27,26 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Run simulation and monitoring
+      - name: Run simulation
         env:
-          LOG_FILE:             "./monitoring/predictions_log.csv"
-          SIMULATE_SAMPLES:     "100"
-          MONITORING_HOURS:     "24"
+          LOG_FILE: "./monitoring/predictions_log.csv"
+          HF_REPO: ${{ secrets.HF_REPO }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          SIMULATE_SAMPLES: "100"
+          PYTHONPATH: "."
+        run: |
+          if [ "${{ github.event.inputs.force_drift }}" == "true" ]; then
+            python src/monitoring/simulate.py drift
+          else
+            python src/monitoring/simulate.py
+          fi
+
+      - name: Run drift detection
+        env:
+          LOG_FILE: "./monitoring/predictions_log.csv"
           CONFIDENCE_THRESHOLD: "0.65"
-          SIMULATE_SEED:       "42"
-          PYTHONPATH:           "."
-        run: python src/monitoring/simulate.py
+          PYTHONPATH: "."
+        run: python src/monitoring/drift.py
 
       - name: Upload predictions log
         uses: actions/upload-artifact@v4

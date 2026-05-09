@@ -167,8 +167,8 @@ def check_distribution_shift(current_distribution: dict[str, float]) -> dict[str
         if delta > 0.15:
             shifts[label] = {
                 "baseline": baseline_pct,
-                "current":  current_pct,
-                "delta":    round(delta, 3)
+                "current": current_pct,
+                "delta": round(delta, 3)
             }
     return shifts
 
@@ -192,16 +192,16 @@ def run_monitoring_report(hours: int = 24) -> None:
     Returns:
         None
     """
-    current_rows  = load_recent_logs(hours=hours)
+    current_rows = load_recent_logs(hours=hours)
     baseline_rows = load_baseline_logs(hours=hours)
 
     if not current_rows:
         print("No predictions in the last hours.")
         return
 
-    distribution   = compute_sentiment_distribution(current_rows)
+    distribution = compute_sentiment_distribution(current_rows)
     avg_confidence = compute_avg_confidence(current_rows)
-    shifts         = check_distribution_shift(distribution)
+    shifts = check_distribution_shift(distribution)
 
     print(f"\n=== Monitoring Report — last {hours}h ===")
     print(f"Total predictions: {len(current_rows)}")
@@ -232,7 +232,7 @@ def run_monitoring_report(hours: int = 24) -> None:
     # PSI
     if baseline_rows:
         baseline_scores = [float(r["confidence"]) for r in baseline_rows]
-        current_scores  = [float(r["confidence"]) for r in current_rows]
+        current_scores = [float(r["confidence"]) for r in current_rows]
         psi = compute_psi(baseline_scores, current_scores)
 
         print(f"\nPSI (confidence scores): {psi}")
@@ -254,5 +254,11 @@ def run_monitoring_report(hours: int = 24) -> None:
         print(f"Reason: {reason}")
         print(f"To trigger retraining, run the CI workflow manually from GitHub Actions.")
 
+
 if __name__ == "__main__":
-    run_monitoring_report()
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "drift":
+        # Modalità drift (se serve)
+        run_monitoring_report()
+    else:
+        run_monitoring_report()

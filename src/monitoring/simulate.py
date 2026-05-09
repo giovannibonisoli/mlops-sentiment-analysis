@@ -1,5 +1,7 @@
 import os
 import sys
+import time
+
 from datasets import load_dataset, concatenate_datasets
 from src.monitoring.monitor import log_predictions
 from src.monitoring.drift import run_monitoring_report
@@ -7,7 +9,7 @@ from src.model import load_classifier
 
 SIMULATE_SAMPLES = int(os.getenv("SIMULATE_SAMPLES", 100))
 MONITORING_HOURS = int(os.getenv("MONITORING_HOURS", 24))
-SIMULATE_SEED = int(os.getenv("SIMULATE_SEED", 42))
+SIMULATE_SEED = int(time.time() / 3600)  # Cambia ogni ora
 
 
 def simulate(samples: int = SIMULATE_SAMPLES) -> None:
@@ -34,9 +36,6 @@ def simulate(samples: int = SIMULATE_SAMPLES) -> None:
     print(f"\nSimulating {samples} new texts...\n")
     log_predictions(list(test_data["text"]), classifier=classifier)
     print(f"{samples} predictions logged to {os.getenv('LOG_FILE', './monitoring/predictions_log.csv')}")
-
-    print("\nRunning monitoring report...")
-    run_monitoring_report(hours=MONITORING_HOURS)
 
 
 def simulate_drift(samples: int = SIMULATE_SAMPLES) -> None:
@@ -75,9 +74,6 @@ def simulate_drift(samples: int = SIMULATE_SAMPLES) -> None:
 
     print(f"\nSimulating drift with {len(drifted)} imbalanced texts...\n")
     log_predictions(list(drifted["text"]), classifier=classifier)
-
-    print("\nRunning monitoring report (drifted distribution)...")
-    run_monitoring_report(hours=MONITORING_HOURS)
 
 
 if __name__ == "__main__":
