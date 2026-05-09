@@ -4,7 +4,6 @@ import time
 
 from datasets import load_dataset, concatenate_datasets
 from src.monitoring.monitor import log_predictions
-from src.monitoring.drift import run_monitoring_report
 from src.model import load_classifier
 
 SIMULATE_SAMPLES = int(os.getenv("SIMULATE_SAMPLES", 100))
@@ -76,8 +75,38 @@ def simulate_drift(samples: int = SIMULATE_SAMPLES) -> None:
     log_predictions(list(drifted["text"]), classifier=classifier)
 
 
+def simulate_data_drift(samples: int = SIMULATE_SAMPLES) -> None:
+    """
+    Simulate data/population drift using a different dataset.
+
+    Uses the imdb sentiment dataset which represents a different data
+    distribution (movie reviews vs tweets). This causes the model to be
+    less confident, triggering PSI-based drift detection.
+
+    Args:
+        samples (int, optional):
+            Number of samples to simulate. Defaults to SIMULATE_SAMPLES.
+
+    Returns:
+        None
+    """
+    print("Loading dataset for data drift simulation...")
+    dataset = load_dataset("imdb")
+    test_data = dataset["test"].shuffle(seed=SIMULATE_SEED).select(range(samples))
+
+    print("Loading model...")
+    classifier = load_classifier()
+
+    print(f"\nSimulating data drift with {samples} texts from different domain...\n")
+    log_predictions(list(test_data["text"]), classifier=classifier)
+
+
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == "drift":
+    mode = sys.argv[1] if len(sys.argv) > 1 else "normal"
+
+    if mode == "drift":
         simulate_drift()
+    elif mode == "data_drift":
+        simulate_data_drift()
     else:
         simulate()

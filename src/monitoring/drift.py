@@ -258,7 +258,6 @@ def run_monitoring_report(hours: int = 24) -> None:
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1 and sys.argv[1] == "drift":
-        # Modalità drift (se serve)
         run_monitoring_report()
     else:
         run_monitoring_report()

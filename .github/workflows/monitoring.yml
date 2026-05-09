@@ -2,13 +2,17 @@ name: Monitoring — Sentiment e Drift
 
 on:
   schedule:
-    - cron: "0 * * * *"
+    - cron: "0 */8 * * *"
   workflow_dispatch:
     inputs:
-      force_drift:
-        description: "Simulate reputational crisis"
-        type: boolean
-        default: false
+      simulation_mode:
+        description: "Simulation mode"
+        type: choice
+        options:
+          - normal
+          - drift
+          - data_drift
+        default: "normal"
 
 jobs:
   monitor:
