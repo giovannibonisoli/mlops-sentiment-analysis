@@ -46,19 +46,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Recupera il codice sorgente dal repository
+      # Step 1: RECUPERA IL CODICE SORGENTE DALLA REPOSITORY
       # Necessario per avere accesso agli script di monitoring
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # Step 2: Configura l'ambiente Python
+      # Step 2: RECUPERA I LOG DELLE PREDIZIONI DELLE RUN PRECEDENTI
+      # Permette di accumulare dati storici, utile per calcolare il PSI
+      - name: Download previous predictions log
+        uses: actions/download-artifact@v4
+        with:
+          name: predictions-log
+          path: ./monitoring
+        continue-on-error: true
+
+      # Step 3: CONFIGURA L'AMBIENTE PYTHON
       # Versione fissa (3.10) per garantire riproducibilità
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
-      # Step 3: Installa le dipendenze del progetto
+      # Step 4: INSTALLA LE DIPENDENZE DEL PROGETTO
       # Usa requirements.txt se presente (dovrebbe includere transformers, numpy, ecc.)
       - name: Install dependencies
         run: |
@@ -66,7 +75,7 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
 
-      # ===== STEP 4: SIMULAZIONE RICHIESTE (SOLO DEMO) =====
+      # STEP 5: SIMULAZIONE RICHIESTE (SOLO DEMO)
       # Genera richieste sintetiche al modello e le registra in predictions_log.csv
       # ATTENZIONE: Questo è SOLO un esempio dimostrativo!
       # 
@@ -91,7 +100,7 @@ jobs:
         run: |
           python src/monitoring/simulate.py ${{ github.event.inputs.simulation_mode || 'normal' }}
 
-      # ===== STEP 5: RILEVAZIONE DRIFT =====
+      # STEP 6: RILEVAZIONE DRIFT
       # Analizza predictions_log.csv per rilevare:
       # - Conceptual drift: cambiamento nelle distribuzioni delle predizioni
       # - Data drift: cambiamento nelle caratteristiche dei testi
@@ -103,7 +112,7 @@ jobs:
           PYTHONPATH: "."
         run: python src/monitoring/drift.py
 
-      # ===== STEP 6: CARICA ARTEFATTO =====
+      # STEP 7: CARICA ARTEFATTO
       # Salva predictions_log.csv come artefatto della GitHub Action
       # Utile per analisi offline, debug o audit del modello nel tempo
       # al fine di stabilire la necessità o meno di un riallenamento
