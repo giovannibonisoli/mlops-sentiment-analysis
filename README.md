@@ -99,7 +99,7 @@ mlops-sentiment-analysis/
 ### Installation
 
 ```bash
-git clone https://github.com/tuousername/mlops-sentiment-analysis.git
+git clone https://github.com/giovannibonisoli/mlops-sentiment-analysis.git
 cd mlops-sentiment-analysis
 pip install -r requirements.txt
 ```
@@ -210,7 +210,7 @@ This job is deliberately restricted to manual triggers only, because:
 
 The validated model is deployed to HuggingFace Hub, which acts as a centralized model registry. This enables versioning, easy integration, and scalability.
 
-**Model:** [tuousername/sentiment-model](https://huggingface.co/username/sentiment-model)
+**Model:** [tuousername/sentiment-model](https://huggingface.co/giovannibonisoli/sentiment-model)
 
 ---
 
@@ -267,8 +267,8 @@ The prediction log is stored directly in the repository (`predictions_log/predic
 | Secret | Description |
 |--------|-------------|
 | `HF_TOKEN` | HuggingFace write-access token |
-| `HF_REPO` | HuggingFace repository (e.g., `username/sentiment-model`) |
-| `GH_REPO` | GitHub repository (e.g., `username/mlops-sentiment-analysis`) |
+| `HF_REPO` | HuggingFace repository (e.g., `giovannibonisoli/sentiment-model`) |
+| `GH_REPO` | GitHub repository (e.g., `giovannibonisoli/mlops-sentiment-analysis`) |
 
 **Note:** `GITHUB_TOKEN` is automatically provided by GitHub Actions and does not need to be configured manually.
 
