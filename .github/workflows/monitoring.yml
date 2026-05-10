@@ -1,50 +1,101 @@
+# ============================================================
+# WORKFLOW DI MONITORAGGIO: SENTIMENT E DATA DRIFT
+# ============================================================
+# SCOPO: Monitorare continuamente le performance del modello in produzione
+# rilevando eventuali degradazioni o cambiamenti nella distribuzione dei dati.
+# 
+# TRIGGER:
+#   1. Schedule: Eseguito automaticamente ogni 8 ore
+#   2. Manuale: workflow_dispatch con diverse modalità di simulazione
+#
+# NOTE: Utile per rilevare concettuali drift o cambiamenti nel sentiment
+# degli utenti nel tempo.
+
 name: Monitoring — Sentiment e Drift
 
 on:
   schedule:
+    # ===== TRIGGER AUTOMATICO =====
+    # Esecuzione schedulata ogni 8 ore (0:00, 8:00, 16:00 UTC)
+    # Permette di monitorare il modello in produzione con cadenza regolare
     - cron: "0 */8 * * *"
+
+  # ===== TRIGGER MANUALE =====
+  # Permette di testare il sistema di monitoring con diversi scenari:
+  # - normal: dati normali (baseline)
+  # - drift: cambiamento delle distribuzioni delle classi (discesa della reputazione)
+  # - data_drift: cambiamento nelle feature di input (testi)
   workflow_dispatch:
     inputs:
       simulation_mode:
         description: "Simulation mode"
         type: choice
         options:
-          - normal
-          - drift
-          - data_drift
+          - normal        # Scenario normale: distribuzione equilibrata
+          - drift         # Concettual drift: cambio nel sentiment prevalente
+          - data_drift    # Data drift: cambiamento della distribuzione dei dati
         default: "normal"
 
 jobs:
+  # ============================================================
+  # JOB: MONITORAGGIO COMPLETO
+  # ============================================================
+  # SCOPO: Simulare richieste al modello, rilevare drift e salvare log
+  # OUTPUT: predictions_log.csv (artefatto scaricabile per 7 giorni)
   monitor:
     runs-on: ubuntu-latest
+
     steps:
+      # Step 1: Recupera il codice sorgente dal repository
+      # Necessario per avere accesso agli script di monitoring
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      # Step 2: Configura l'ambiente Python
+      # Versione fissa (3.10) per garantire riproducibilità
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
+      # Step 3: Installa le dipendenze del progetto
+      # Usa requirements.txt se presente (dovrebbe includere transformers, numpy, ecc.)
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
+
+      # ===== STEP 4: SIMULAZIONE RICHIESTE (SOLO DEMO) =====
+      # Genera richieste sintetiche al modello e le registra in predictions_log.csv
+      # ATTENZIONE: Questo è SOLO un esempio dimostrativo!
+      # 
+      # In un progetto reale:
+      #   - Si integrerebbe con Twitter/X API, Reddit API, Facebook API, ecc.
+      #   - Si estrarrebbero continuamente nuovi testi reali dalle piattaforme social
+      #   - Si monitorerebbe il sentiment in tempo reale su dati effettivi degli utenti
+      #   - Si userebbe un sistema di streaming (Kafka, RabbitMQ) per gestire il flusso
+      #
+      # Questa simulazione produce dati fittizi per:
+      #   - Testare il workflow di monitoring senza chiamate API reali
+      #   - Dimostrare la logica di rilevamento drift
+      #   - Permettere esecuzione offline della pipeline
+      #
       - name: Run simulation
         env:
-          LOG_FILE: "./monitoring/predictions_log.csv"
-          HF_REPO: ${{ secrets.HF_REPO }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          SIMULATE_SAMPLES: "100"
-          PYTHONPATH: "."
+          LOG_FILE: "./monitoring/predictions_log.csv"     # Path del file di log
+          HF_REPO: ${{ secrets.HF_REPO }}                  # Modello in produzione
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}                # Per autenticarsi su HF Hub
+          SIMULATE_SAMPLES: "100"                          # Numero di richieste simulate
+          PYTHONPATH: "."                                  # Permette import da src/
         run: |
-          if [ "${{ github.event.inputs.force_drift }}" == "true" ]; then
-            python src/monitoring/simulate.py drift
-          else
-            python src/monitoring/simulate.py
-          fi
+          python src/monitoring/simulate.py ${{ github.event.inputs.simulation_mode || 'normal' }}
 
+      # ===== STEP 5: RILEVAZIONE DRIFT =====
+      # Analizza predictions_log.csv per rilevare:
+      # - Conceptual drift: cambiamento nelle distribuzioni delle predizioni
+      # - Data drift: cambiamento nelle caratteristiche dei testi
+      # - Confidence drift: abbassamento della confidenza media del modello
       - name: Run drift detection
         env:
           LOG_FILE: "./monitoring/predictions_log.csv"
@@ -52,6 +103,10 @@ jobs:
           PYTHONPATH: "."
         run: python src/monitoring/drift.py
 
+      # ===== STEP 6: CARICA ARTEFATTO =====
+      # Salva predictions_log.csv come artefatto della GitHub Action
+      # Utile per analisi offline, debug o audit del modello nel tempo
+      # al fine di stabilire la necessità o meno di un riallenamento
       - name: Upload predictions log
         uses: actions/upload-artifact@v4
         with:

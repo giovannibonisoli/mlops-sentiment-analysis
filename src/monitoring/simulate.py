@@ -10,7 +10,12 @@ SIMULATE_SAMPLES = int(os.getenv("SIMULATE_SAMPLES", 100))
 MONITORING_HOURS = int(os.getenv("MONITORING_HOURS", 24))
 SIMULATE_SEED = int(time.time() / 3600)  # Cambia ogni ora
 
-
+# ============================================================
+# SIMULAZIONE NORMALE
+# ============================================================
+# Simula l'arrivo di nuovi testi da social media usando il test set di tweet_eval.
+# In un sistema reale, questi testi proverrebbero da API di Twitter, Reddit, ecc.
+# Il seed cambia ogni ora per garantire varietà nelle simulazioni automatizzate.
 def simulate(samples: int = SIMULATE_SAMPLES) -> None:
     """
     Simulate incoming social media texts for monitoring.
@@ -37,6 +42,12 @@ def simulate(samples: int = SIMULATE_SAMPLES) -> None:
     print(f"{samples} predictions logged to {os.getenv('LOG_FILE', './monitoring/predictions_log.csv')}")
 
 
+# ============================================================
+# SIMULAZIONE CONCEPTUAL DRIFT
+# ============================================================
+# Simula un conceptual drift sovracampionando la classe negativa (70% negative vs 32% baseline).
+# Utile per testare la rilevazione di drift quando gli utenti diventano più negativi
+# (es. crisi reputazionale, lancio di prodotto fallito, cattive notizie).
 def simulate_drift(samples: int = SIMULATE_SAMPLES) -> None:
     """
     Simulate distribution drift by oversampling the negative class.
@@ -74,7 +85,12 @@ def simulate_drift(samples: int = SIMULATE_SAMPLES) -> None:
     print(f"\nSimulating drift with {len(drifted)} imbalanced texts...\n")
     log_predictions(list(drifted["text"]), classifier=classifier)
 
-
+# ============================================================
+# SIMULAZIONE DATA DRIFT
+# ============================================================
+# Simula un data drift usando un dataset completamente diverso (IMDb recensioni film).
+# Il modello diventa meno confidente perché non ha mai visto testi così lunghi/diversi,
+# attivando la rilevazione PSI anche senza cambiamento nelle distribuzioni delle classi.
 def simulate_data_drift(samples: int = SIMULATE_SAMPLES) -> None:
     """
     Simulate data/population drift using a different dataset.
@@ -101,9 +117,14 @@ def simulate_data_drift(samples: int = SIMULATE_SAMPLES) -> None:
     log_predictions(list(test_data["text"]), classifier=classifier)
 
 
+# ============================================================
+# PUNTO DI ENTRATA
+# ============================================================
+# - "drift" → simulate_drift()  (cambiamento distribuzione classi)
+# - "data_drift" → simulate_data_drift() (cambiamento dominio dati)
+# - "normal" → simulate() (default, distribuzione normale)
 if __name__ == "__main__":
     mode = sys.argv[1] if len(sys.argv) > 1 else "normal"
-
     if mode == "drift":
         simulate_drift()
     elif mode == "data_drift":

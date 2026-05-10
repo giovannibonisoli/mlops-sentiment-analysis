@@ -85,11 +85,16 @@ jobs:
   # ============================================================
   # JOB 2: TRAINING, VALIDAZIONE E DEPLOY
   # ============================================================
-  # SCOPO: Addestrare un nuovo modello e pubblicarlo se è migliore del modello già pubblicaot
+  # SCOPO: Addestrare un nuovo modello e pubblicarlo se è migliore del modello già pubblicato
   # TRIGGER: Solo manuale (workflow_dispatch) - NON su push/pull_request
-  # NOTE: Richiede ~30-60 min e consuma risorse GPU/CPU, motivo per il quale non ha senso lanciarlo ad ogni push
+  # NOTE: Richiede ~30-60 min e consuma risorse GPU/CPU, motivo per il quale 
+  # non ha senso lanciarlo ad ogni push. Inoltre, su GitHub Actions,
+  # l'uso di runner standard (senza GPU) è gratuito, ma molto più lento.
   train-and-deploy:
     runs-on: ubuntu-latest
+
+    # NOTA: In produzione si userebbe un runner con GPU (es. runs-on: ubuntu-latest-gpu)
+    # per ridurre i tempi di training da ~60 min a ~10 min
 
     # Questa istruzione rende obbligatoria l'esecuzione del JOB 1 (test)
     # Se i test falliscono, l'allenamento non parte. 
@@ -115,6 +120,7 @@ jobs:
     # ===== STEP 1: ALLENAMENTO =====
     # Addestra il modello usando i parametri specificati manualmente
     # Salva il modello in ./models/sentiment_model
+    
     - name: Train model
       env:
         HF_REPO: ${{ secrets.HF_REPO }} # Repository Hugging Face di destinazione
@@ -123,7 +129,9 @@ jobs:
         TRAIN_SAMPLES: ${{ github.event.inputs.train_samples  || '1000' }}
         VALIDATION_SAMPLES: ${{ github.event.inputs.validation_samples   || '1000' }}
         NUM_EPOCHS: ${{ github.event.inputs.num_epochs   || '3' }}
-        TRAIN_SEED: ${{ github.event.inputs.train_seed   || '42' }}
+        # ATTENZIONE: In assenza di una sorgente di dati reale, il seed viene esposto come parametro per simulare 
+        # la variabilità che in produzione deriverebbe dall'utilizzo di nuovi dati raccolti dal monitoraggio
+        TRAIN_SEED: ${{ github.event.inputs.train_seed   || '42' }} 
         PYTHONPATH: ${{ github.workspace }} # Permette import da src/
       run: python src/train.py
 
