@@ -36,6 +36,9 @@ on:
           - data_drift    # Data drift: cambiamento della distribuzione dei dati
         default: "normal"
 
+permissions:
+  contents: write
+
 jobs:
   # ============================================================
   # JOB: MONITORAGGIO COMPLETO
