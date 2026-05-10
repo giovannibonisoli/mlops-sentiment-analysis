@@ -46,51 +46,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: RECUPERA IL CODICE SORGENTE DALLA REPOSITORY
+      # STEP 1: RECUPERA IL CODICE SORGENTE DALLA REPOSITORY
       # Necessario per avere accesso agli script di monitoring
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # Step 2: RECUPERA I LOG DELLE PREDIZIONI DELLE RUN PRECEDENTI
-      # Usa dawidd6/action-download-artifact per scaricare l'artifact
-      # dell'ultima run disponibile senza dover specificare il run-id.
-      # continue-on-error: true gestisce il caso della prima run,
-      # in cui non esiste ancora nessun artifact precedente.
-      # NOTA: In un sistema reale, i log delle predizioni
-      # verrebbero persistiti in un database (es. PostgreSQL con TimescaleDB)
-      # per recuperare esattamente le finestre temporali desiderate (24-48 ore fa).
-      # L'uso di GitHub Artifacts è una semplificazione didattica.
-      - name: Download previous predictions log
-        uses: dawidd6/action-download-artifact@v6
-        with:
-          name: predictions-log
-          path: ./monitoring
-          workflow: monitoring.yml
-          if_no_artifact_found: ignore
-        continue-on-error: true
-
-      # Step 3: RECUPERA I LOG DELLE PREDIZIONI DELLE RUN PRECEDENTI
-      # Permette di accumulare dati storici, utile per calcolare il PSI
-      - name: Download previous predictions log
-        uses: actions/download-artifact@v4
-        with:
-          name: predictions-log
-          path: ./monitoring
-        continue-on-error: true
-
-      # Step 4: CONFIGURA L'AMBIENTE PYTHON
+      # STEP 2: CONFIGURA L'AMBIENTE PYTHON
       # Versione fissa (3.10) per garantire riproducibilità
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
-      # Step 5: INSTALLA LE DIPENDENZE DEL PROGETTO
+      # Step 3: INSTALLA LE DIPENDENZE DEL PROGETTO
       # Usa requirements.txt se presente (dovrebbe includere transformers, numpy, ecc.)
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+
+      # Step 4: RECUPERA I LOG DELLE PREDIZIONI DELLE RUN PRECEDENTI
+      # Le predizioni vengono scaricate dalla repository, che contiene un file di log
+      # dove le predizioni vengono accodate.
+      # NOTA: In un sistema reale, i log delle predizioni
+      # verrebbero persistiti in un database (es. PostgreSQL con TimescaleDB)
+      # per recuperare esattamente le finestre temporali desiderate (24-48 ore fa).
+      # Il commit sulla repository è una semplificazione didattica.
+      - name: Pull latest predictions log from repo
+        run: |
+          git pull origin main
+          mkdir -p ./monitoring/predictions_log
 
 
       # STEP 5: SIMULAZIONE RICHIESTE (SOLO DEMO)
@@ -110,7 +96,7 @@ jobs:
       #
       - name: Run simulation
         env:
-          LOG_FILE: "./monitoring/predictions_log.csv"     # Path del file di log
+          LOG_FILE: "./monitoring/predictions_log/predictions_log.csv"     # Path del file di log
           HF_REPO: ${{ secrets.HF_REPO }}                  # Modello in produzione
           HF_TOKEN: ${{ secrets.HF_TOKEN }}                # Per autenticarsi su HF Hub
           SIMULATE_SAMPLES: "100"                          # Numero di richieste simulate
@@ -130,13 +116,14 @@ jobs:
           PYTHONPATH: "."
         run: python src/monitoring/drift.py
 
-      # STEP 7: CARICA ARTEFATTO
-      # Salva predictions_log.csv come artefatto della GitHub Action
+      # STEP 7: CARICA PREDIZIONI NUOVE
+      # Committa predictions_log.csv sulla repository
       # Utile per analisi offline, debug o audit del modello nel tempo
       # al fine di stabilire la necessità o meno di un riallenamento
-      - name: Upload predictions log
-        uses: actions/upload-artifact@v4
-        with:
-          name: predictions-log
-          path: ./monitoring/predictions_log.csv
-          retention-days: 7
+      - name: Commit and push updated predictions log
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ./monitoring/predictions_log/   # ← aggiunge tutta la cartella
+          git diff --staged --quiet || git commit -m "Update predictions log [skip ci]"
+          git push origin main
