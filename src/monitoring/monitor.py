@@ -22,7 +22,7 @@ from src.model import load_classifier
 # ============================================================
 
 # Path del file CSV dove salvare i log delle predizioni
-LOG_FILE   = os.getenv("LOG_FILE", "./monitoring/predictions_log/predictions_log.csv")
+LOG_FILE   = os.getenv("LOG_FILE", "./predictions_log/predictions_log.csv")
 
 # Nomi delle colonne nel file CSV (ordine mantenuto)
 LOG_FIELDS = ["timestamp", "text", "predicted_label", "confidence"]

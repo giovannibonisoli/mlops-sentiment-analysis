@@ -30,7 +30,7 @@ from datetime import datetime, timedelta, timezone
 
 # Path del file CSV contenente i log delle predizioni
 # Formato atteso: colonne "timestamp", "predicted_label", "confidence"
-LOG_FILE = os.getenv("LOG_FILE", "./monitoring/predictions_log/predictions_log.csv")
+LOG_FILE = os.getenv("LOG_FILE", "./predictions_log/predictions_log.csv")
 
 # Soglia critica per la confidenza media del modello
 # Valori inferiori indicano che il modello è sistematicamente insicuro

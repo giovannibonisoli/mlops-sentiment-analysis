@@ -79,7 +79,7 @@ jobs:
       - name: Pull latest predictions log from repo
         run: |
           git pull origin main
-          mkdir -p ./monitoring/predictions_log
+          mkdir -p ./predictions_log
 
 
       # STEP 5: SIMULAZIONE RICHIESTE (SOLO DEMO)
@@ -99,7 +99,7 @@ jobs:
       #
       - name: Run simulation
         env:
-          LOG_FILE: "./monitoring/predictions_log/predictions_log.csv"     # Path del file di log
+          LOG_FILE: "./predictions_log/predictions_log.csv"     # Path del file di log
           HF_REPO: ${{ secrets.HF_REPO }}                  # Modello in produzione
           HF_TOKEN: ${{ secrets.HF_TOKEN }}                # Per autenticarsi su HF Hub
           SIMULATE_SAMPLES: "100"                          # Numero di richieste simulate
@@ -114,7 +114,7 @@ jobs:
       # - Confidence drift: abbassamento della confidenza media del modello
       - name: Run drift detection
         env:
-          LOG_FILE: "./monitoring/predictions_log/predictions_log.csv"
+          LOG_FILE: "./predictions_log/predictions_log.csv"
           CONFIDENCE_THRESHOLD: "0.65"
           PYTHONPATH: "."
         run: python src/monitoring/drift.py
