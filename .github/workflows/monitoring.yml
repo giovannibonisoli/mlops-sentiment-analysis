@@ -52,6 +52,24 @@ jobs:
         uses: actions/checkout@v4
 
       # Step 2: RECUPERA I LOG DELLE PREDIZIONI DELLE RUN PRECEDENTI
+      # Usa dawidd6/action-download-artifact per scaricare l'artifact
+      # dell'ultima run disponibile senza dover specificare il run-id.
+      # continue-on-error: true gestisce il caso della prima run,
+      # in cui non esiste ancora nessun artifact precedente.
+      # NOTA: In un sistema reale, i log delle predizioni
+      # verrebbero persistiti in un database (es. PostgreSQL con TimescaleDB)
+      # per recuperare esattamente le finestre temporali desiderate (24-48 ore fa).
+      # L'uso di GitHub Artifacts è una semplificazione didattica.
+      - name: Download previous predictions log
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: predictions-log
+          path: ./monitoring
+          workflow: monitoring.yml
+          if_no_artifact_found: ignore
+        continue-on-error: true
+
+      # Step 3: RECUPERA I LOG DELLE PREDIZIONI DELLE RUN PRECEDENTI
       # Permette di accumulare dati storici, utile per calcolare il PSI
       - name: Download previous predictions log
         uses: actions/download-artifact@v4
@@ -60,14 +78,14 @@ jobs:
           path: ./monitoring
         continue-on-error: true
 
-      # Step 3: CONFIGURA L'AMBIENTE PYTHON
+      # Step 4: CONFIGURA L'AMBIENTE PYTHON
       # Versione fissa (3.10) per garantire riproducibilità
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
-      # Step 4: INSTALLA LE DIPENDENZE DEL PROGETTO
+      # Step 5: INSTALLA LE DIPENDENZE DEL PROGETTO
       # Usa requirements.txt se presente (dovrebbe includere transformers, numpy, ecc.)
       - name: Install dependencies
         run: |
