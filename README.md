@@ -1,6 +1,6 @@
 # MLOps Sentiment Analysis
 
-A complete MLOps pipeline for social media sentiment analysis, developed for MachineInnovators Inc. The system automatically classifies texts as **positive**, **neutral**, or **negative**, monitors model performance over time, and triggers retraining when drift is detected.
+A complete MLOps pipeline for social media sentiment analysis. The system automatically classifies texts as **positive**, **neutral**, or **negative**, monitors model performance over time, and triggers retraining when drift is detected.
 
 ---
 
@@ -21,7 +21,7 @@ A complete MLOps pipeline for social media sentiment analysis, developed for Mac
 
 ## Project Overview
 
-MachineInnovators Inc. needs to monitor and improve its social media reputation automatically. This project implements a full MLOps lifecycle:
+This project implements a full MLOps lifecycle for monitoring and improve the social media reputation of a company:
 
 1. **Sentiment Analysis** using a pre-trained RoBERTa model fine-tuned on Twitter data
 2. **CI/CD Pipeline** with GitHub Actions for automated training, validation, and deployment
