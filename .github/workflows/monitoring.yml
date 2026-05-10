@@ -111,7 +111,7 @@ jobs:
       # - Confidence drift: abbassamento della confidenza media del modello
       - name: Run drift detection
         env:
-          LOG_FILE: "./monitoring/predictions_log.csv"
+          LOG_FILE: "./monitoring/predictions_log/predictions_log.csv"
           CONFIDENCE_THRESHOLD: "0.65"
           PYTHONPATH: "."
         run: python src/monitoring/drift.py
