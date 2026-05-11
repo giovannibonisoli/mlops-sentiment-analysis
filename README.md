@@ -246,7 +246,7 @@ Simulates incoming social media texts for demonstration purposes:
 |------|-------------|
 | `normal` | Balanced distribution from `tweet_eval` test set |
 | `drift` | 70% negative — simulates a reputational crisis |
-| `data_drift` | IMDb movie reviews — simulates domain shift |
+| `data_drift` | simulates domain shift |
 
 **In production**, this module would be replaced by real social media API integrations (Twitter/X API, Reddit API, etc.).
 
