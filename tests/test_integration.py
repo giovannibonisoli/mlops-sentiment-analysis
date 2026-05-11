@@ -51,25 +51,30 @@ def test_pipeline_labels_are_valid():
     assert all(p in valid_labels for p in predictions)
 
 # Verifica che le confidence scores siano sempre nel range [0, 1]
-def test_pipeline_confidence_range():
+def test_pipeline_confidence_range(tmp_path):
     """
     Verify that confidence scores are always in the range [0, 1].
 
     Returns:
         None
     """
-    os.environ["LOG_FILE"] = "./test_predictions_confidence.csv"
+    log_path = tmp_path / "test_predictions_confidence.csv"
+    os.environ["LOG_FILE"] = str(log_path)
+
+    import importlib
+    import src.monitoring.monitor as monitor_module
+    importlib.reload(monitor_module)
 
     dataset = load_dataset("tweet_eval", "sentiment")
     sample = dataset["test"].select(range(10))
 
     classifier = load_classifier()
-    results = log_predictions(list(sample["text"]), classifier=classifier)
+    results = monitor_module.log_predictions(list(sample["text"]), classifier=classifier)
 
     assert all(0.0 <= r["score"] <= 1.0 for r in results)
 
-    if os.path.exists("./test_predictions_confidence.csv"):
-        os.remove("./test_predictions_confidence.csv")
+    os.environ["LOG_FILE"] = "./predictions_log/predictions_log.csv"
+    importlib.reload(monitor_module)
 
 # ============================================================
 # INTEGRATION TESTS — EVALUATE
@@ -114,65 +119,74 @@ def test_evaluate_returns_valid_macro_f1():
 # INTEGRATION TESTS — MONITOR
 # ============================================================
 # Verifica che log_predictions() crei il file CSV se non esiste
-def test_log_predictions_creates_file():
+def test_log_predictions_creates_file(tmp_path):
     """
     Verify that log_predictions() creates the CSV file if it does not exist.
 
     Returns:
         None
     """
-    log_path = "./test_predictions_create.csv"
-    os.environ["LOG_FILE"] = log_path
+    log_path = tmp_path / "test_predictions_create.csv"
+    os.environ["LOG_FILE"] = str(log_path)
 
-    if os.path.exists(log_path):
-        os.remove(log_path)
+    # Ricarica il modulo per applicare la nuova variabile d'ambiente
+    import importlib
+    import src.monitoring.monitor as monitor_module
+    importlib.reload(monitor_module)
 
     classifier = load_classifier()
-    log_predictions(["This is a test."], classifier=classifier)
+    monitor_module.log_predictions(["This is a test."], classifier=classifier)
 
-    assert os.path.exists(log_path)
-    os.remove(log_path)
+    assert log_path.exists()
+
+    # Ripristina il path di default
+    os.environ["LOG_FILE"] = "./predictions_log/predictions_log.csv"
+    importlib.reload(monitor_module)
 
 # Verifica che log_predictions() appenda le predizioni senza sovrascrivere
-def test_log_predictions_appends():
+def test_log_predictions_appends(tmp_path):
     """
     Verify that log_predictions() appends predictions without overwriting.
 
     Returns:
         None
     """
-    log_path = "./test_predictions_append.csv"
-    os.environ["LOG_FILE"] = log_path
+    log_path = tmp_path / "test_predictions_append.csv"
+    os.environ["LOG_FILE"] = str(log_path)
 
-    if os.path.exists(log_path):
-        os.remove(log_path)
+    import importlib
+    import src.monitoring.monitor as monitor_module
+    importlib.reload(monitor_module)
 
     classifier = load_classifier()
-    log_predictions(["First text."], classifier=classifier)
-    log_predictions(["Second text."], classifier=classifier)
+    monitor_module.log_predictions(["First text."], classifier=classifier)
+    monitor_module.log_predictions(["Second text."], classifier=classifier)
 
     with open(log_path, "r") as f:
         rows = list(csv.DictReader(f))
 
     assert len(rows) == 2
-    os.remove(log_path)
+
+    os.environ["LOG_FILE"] = "./predictions_log/predictions_log.csv"
+    importlib.reload(monitor_module)
 
 # Verifica che il CSV contenga tutte le colonne attese
-def test_log_predictions_csv_fields():
+def test_log_predictions_csv_fields(tmp_path):
     """
     Verify that the CSV contains all expected columns.
 
     Returns:
         None
     """
-    log_path = "./test_predictions_fields.csv"
-    os.environ["LOG_FILE"] = log_path
+    log_path = tmp_path / "test_predictions_fields.csv"
+    os.environ["LOG_FILE"] = str(log_path)
 
-    if os.path.exists(log_path):
-        os.remove(log_path)
+    import importlib
+    import src.monitoring.monitor as monitor_module
+    importlib.reload(monitor_module)
 
     classifier = load_classifier()
-    log_predictions(["This is a test."], classifier=classifier)
+    monitor_module.log_predictions(["This is a test."], classifier=classifier)
 
     with open(log_path, "r") as f:
         reader = csv.DictReader(f)
@@ -182,7 +196,9 @@ def test_log_predictions_csv_fields():
     assert "text" in fields
     assert "predicted_label" in fields
     assert "confidence" in fields
-    os.remove(log_path)
+
+    os.environ["LOG_FILE"] = "./predictions_log/predictions_log.csv"
+    importlib.reload(monitor_module)
 
 # ============================================================
 # INTEGRATION TESTS — DRIFT
@@ -293,8 +309,12 @@ def test_run_monitoring_report_no_data(tmp_path):
     Returns:
         None
     """
-    log_path = str(tmp_path / "empty_log.csv")
-    os.environ["LOG_FILE"] = log_path
+    log_path = tmp_path / "empty_log.csv"
+    os.environ["LOG_FILE"] = str(log_path)
+
+    import importlib
+    import src.monitoring.drift as drift_module
+    importlib.reload(drift_module)
 
     # Crea un CSV vuoto con solo l'intestazione
     with open(log_path, "w", newline="") as f:
@@ -302,4 +322,7 @@ def test_run_monitoring_report_no_data(tmp_path):
         writer.writeheader()
 
     # Non deve sollevare eccezioni
-    run_monitoring_report(hours=24)
+    drift_module.run_monitoring_report(hours=24)
+
+    os.environ["LOG_FILE"] = "./predictions_log/predictions_log.csv"
+    importlib.reload(drift_module)

@@ -10,9 +10,9 @@ A complete MLOps pipeline for social media sentiment analysis. The system automa
 - [Architecture](#architecture)
 - [Project Structure](#project-structure)
 - [Setup](#setup)
-- [Phase 1 — Sentiment Analysis Model](#phase-1--sentiment-analysis-model)
-- [Phase 2 — CI/CD Pipeline](#phase-2--cicd-pipeline)
-- [Phase 3 — Deploy and Monitoring](#phase-3--deploy-and-monitoring)
+- [Base Model](#base-model)
+- [CI/CD Pipeline](#cicd-pipeline)
+- [Monitoring System](#monitoring-system)
 - [GitHub Secrets](#github-secrets)
 - [Design Choices](#design-choices)
 - [Limitations and Future Work](#limitations-and-future-work)
@@ -210,7 +210,7 @@ This job is deliberately restricted to manual triggers only, because:
 
 The validated model is deployed to HuggingFace Hub, which acts as a centralized model registry. This enables versioning, easy integration, and scalability.
 
-**Model:** [tuousername/sentiment-model](https://huggingface.co/giovannibonisoli/sentiment-model)
+**Model:** [giovannibonisoli/sentiment-model](https://huggingface.co/giovannibonisoli/sentiment-model)
 
 ---
 
