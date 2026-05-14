@@ -20,32 +20,37 @@
 
 import os
 import csv
+import json
 import numpy as np
+from pathlib import Path
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 
-
-
-# Path del file CSV contenente i log delle predizioni
-# Formato atteso: colonne "timestamp", "predicted_label", "confidence"
 LOG_FILE = os.getenv("LOG_FILE", "./predictions_log/predictions_log.csv")
+CONFIDENCE_THRESHOLD = float(os.getenv("CONFIDENCE_THRESHOLD", 0.65))
+PSI_THRESHOLD_WARNING = 0.1
+PSI_THRESHOLD_ALERT = 0.2
+MODEL_DIR = os.getenv("MODEL_DIR", "./models/sentiment_model")
 
-# Soglia critica per la confidenza media del modello
-# Valori inferiori indicano che il modello è sistematicamente insicuro
-CONFIDENCE_THRESHOLD  = float(os.getenv("CONFIDENCE_THRESHOLD", 0.65))
 
-# Soglie PSI (Population Stability Index)
-PSI_THRESHOLD_WARNING = 0.1   # Leggero drift: monitorare ma non intervenire
-PSI_THRESHOLD_ALERT = 0.2     # Drift grave: retraining necessario
+def load_baseline_distribution() -> dict[str, float] | None:
+    path = Path(MODEL_DIR) / "baseline_distribution.json"
+    if path.exists():
+        with open(path) as f:
+            return json.load(f)
+    hf_repo = os.getenv("HF_REPO")
+    if hf_repo:
+        try:
+            from huggingface_hub import hf_hub_download
+            path = hf_hub_download(repo_id=hf_repo, filename="baseline_distribution.json")
+            with open(path) as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return None
 
-# Distribuzione attesa delle classi sentiment, calcolata sul validation set
-# Valori ottenuti da tweet_eval/sentiment con 1000 campioni, seed=42
-# Serve come baseline per rilevare cambiamenti nel comportamento degli utenti
-BASELINE_DISTRIBUTION = {
-    "negative": 0.323,
-    "neutral":  0.483,
-    "positive": 0.193
-}
+
+BASELINE_DISTRIBUTION = load_baseline_distribution()
 
 
 # Carica le predizioni delle ultime N ore dal file CSV.
@@ -221,11 +226,13 @@ def check_distribution_shift(current_distribution: dict[str, float]) -> dict[str
             Dictionary containing detected shifts
             for each affected sentiment label.
     """
+    if BASELINE_DISTRIBUTION is None:
+        return {}
     shifts = {}
     for label, baseline_pct in BASELINE_DISTRIBUTION.items():
         current_pct = current_distribution.get(label, 0.0)
         delta = abs(current_pct - baseline_pct)
-        if delta > 0.15: # Soglia del 15%
+        if delta > 0.15:
             shifts[label] = {
                 "baseline": baseline_pct,
                 "current":  current_pct,
@@ -316,6 +323,8 @@ def run_monitoring_report(hours: int = 24) -> None:
             print(f"  {label}: baseline {info['baseline']:.1%} → current {info['current']:.1%} (Δ {info['delta']:.1%})")
         retraining_needed = True
         retraining_reasons.append(f"distribution shift: {list(shifts.keys())}")
+    elif BASELINE_DISTRIBUTION is None:
+        print("\n[INFO] No baseline distribution found. Distribution shift check skipped.")
     else:
         print("\n[OK] Sentiment distribution stable.")
 

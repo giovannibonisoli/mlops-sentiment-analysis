@@ -1,4 +1,6 @@
 import os
+import json
+from collections import Counter
 from datasets import load_dataset
 from huggingface_hub import HfApi
 from transformers import (
@@ -139,6 +141,15 @@ def train() -> None:
     model.save_pretrained(OUTPUT_DIR)
     tokenizer.save_pretrained(OUTPUT_DIR)
     print(f"Model saved in {OUTPUT_DIR}")
+
+    baseline = dataset["validation"]
+    counts = Counter(baseline["label"])
+    total = sum(counts.values())
+    distribution = {str(k): round(v / total, 3) for k, v in counts.items()}
+    baseline_path = os.path.join(OUTPUT_DIR, "baseline_distribution.json")
+    with open(baseline_path, "w") as f:
+        json.dump(distribution, f, indent=2)
+    print(f"Baseline distribution saved in {baseline_path}")
 
 if __name__ == "__main__":
     train()

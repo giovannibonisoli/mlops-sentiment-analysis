@@ -5,20 +5,19 @@
 # rilevando eventuali degradazioni o cambiamenti nella distribuzione dei dati.
 # 
 # TRIGGER:
-#   1. Schedule: Eseguito automaticamente ogni 8 ore
-#   2. Manuale: workflow_dispatch con diverse modalità di simulazione
+#   1. Manuale: workflow_dispatch con diverse modalità di simulazione
 #
 # NOTE: Utile per rilevare concettuali drift o cambiamenti nel sentiment
 # degli utenti nel tempo.
 
 name: Monitoring — Sentiment e Drift
 
-# on:
-#   schedule:
-#     # ===== TRIGGER AUTOMATICO =====
-#     # Esecuzione schedulata ogni 8 ore (0:00, 8:00, 16:00 UTC)
-#     # Permette di monitorare il modello in produzione con cadenza regolare
-#     - cron: "0 */8 * * *"
+on:
+  # schedule:
+  #   # ===== TRIGGER AUTOMATICO =====
+  #   # Esecuzione schedulata ogni 8 ore (0:00, 8:00, 16:00 UTC)
+  #   # Permette di monitorare il modello in produzione con cadenza regolare
+  #   - cron: "0 */8 * * *"
 
   # ===== TRIGGER MANUALE =====
   # Permette di testare il sistema di monitoring con diversi scenari:

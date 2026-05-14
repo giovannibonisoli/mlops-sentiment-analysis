@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from src.model import load_model_and_tokenizer
 
 MODEL_PATH = os.getenv("MODEL_PATH", "./models/sentiment_model")
@@ -34,6 +35,16 @@ def deploy() -> None:
 
     model.push_to_hub(HF_REPO, token=HF_TOKEN)
     tokenizer.push_to_hub(HF_REPO, token=HF_TOKEN)
+    baseline_path = Path(MODEL_PATH) / "baseline_distribution.json"
+    if baseline_path.exists():
+        from huggingface_hub import HfApi
+        api = HfApi()
+        api.upload_file(
+            path_or_fileobj=str(baseline_path),
+            path_in_repo="baseline_distribution.json",
+            repo_id=HF_REPO,
+            token=HF_TOKEN,
+        )
     print(f"Deploy completato su {HF_REPO}")
 
 if __name__ == "__main__":

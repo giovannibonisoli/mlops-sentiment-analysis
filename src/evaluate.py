@@ -1,6 +1,7 @@
 import os
 import sys
 from datasets import load_dataset
+from numpy.random import default_rng
 from sklearn.metrics import classification_report, accuracy_score, f1_score
 from src.model import load_classifier, predict
 
@@ -8,11 +9,45 @@ DATASET_NAME = os.getenv("DATASET_NAME", "tweet_eval")
 DATASET_CONFIG = os.getenv("DATASET_CONFIG", "sentiment")
 HF_REPO = os.getenv("HF_REPO")
 LABEL_MAP = {0: "negative", 1: "neutral", 2: "positive"}
+SAMPLE_SIZE = int(os.getenv("VALIDATION_SAMPLE_SIZE", 1000))
 
 
-# Carica il dataset di test, esegue le predizioni usando il classificatore specificato
-# e restituisce un dizionario con accuratezza e macro F1, stampando anche un report dettagliato
-def evaluate(model_path: str | None = None) -> dict[str, float]:
+def _stratified_sample(dataset, n_samples: int, seed: int = 42) -> list:
+    from collections import defaultdict
+    labels = list(dataset["label"])
+    label_indices = defaultdict(list)
+    for i, l in enumerate(labels):
+        label_indices[l].append(i)
+    rng = default_rng(seed)
+    sampled = []
+    per_label = max(1, n_samples // len(label_indices))
+    for l in sorted(label_indices):
+        indices = label_indices[l]
+        k = min(len(indices), per_label)
+        chosen = rng.choice(indices, size=k, replace=False).tolist()
+        sampled.extend(chosen)
+    sampled = sorted(sampled)
+    return [dataset[i] for i in sampled]
+
+
+def _evaluate_split(data: list, classifier) -> dict[str, float]:
+    texts = [item["text"] for item in data]
+    labels = [LABEL_MAP[item["label"]] for item in data]
+    y_pred = predict(classifier, texts)
+    print(classification_report(labels, y_pred))
+    accuracy = accuracy_score(labels, y_pred)
+    macro_f1 = f1_score(labels, y_pred, average="macro")
+    print(f"Accuracy: {accuracy:.2f}")
+    print(f"Macro F1: {macro_f1:.4f}")
+    return {"accuracy": accuracy, "macro_f1": macro_f1}
+
+
+def _evaluate_path(model_path: str | None, data: list) -> dict[str, float]:
+    classifier = load_classifier(model_path)
+    return _evaluate_split(data, classifier)
+
+
+def evaluate(model_path: str | None = None, sample_size: int | None = None) -> dict[str, float]:
     """
     Evaluate a sentiment classification model on the test set.
 
@@ -24,58 +59,47 @@ def evaluate(model_path: str | None = None) -> dict[str, float]:
         model_path (str | None, optional):
             Local path or Hugging Face model identifier.
             If None, uses the default MODEL_NAME.
+        sample_size (int | None, optional):
+            Number of samples for stratified evaluation.
+            If None, evaluates on the full test set.
 
     Returns:
         dict[str, float]:
             Dictionary containing accuracy and macro_f1 scores.
     """
     dataset = load_dataset(DATASET_NAME, DATASET_CONFIG)
-
-    # La valutazione viene effettuata sull'intero test set per maggiore affidabilità
     test_data = dataset["test"]
 
+    if sample_size is not None:
+        test_data = _stratified_sample(dataset["test"], sample_size)
+
     classifier = load_classifier(model_path)
-
-    y_true = [LABEL_MAP[l] for l in list(test_data["label"])]
-    y_pred = predict(classifier, list(test_data["text"]))
-
-    print(classification_report(y_true, y_pred))
-    accuracy = accuracy_score(y_true, y_pred)
-
-    macro_f1 = f1_score(y_true, y_pred, average="macro")
-    print(f"Accuracy: {accuracy:.2f}")
-    print(f"Macro F1: {macro_f1:.4f}")
-
-    return {"accuracy": accuracy, "macro_f1": macro_f1}
+    return _evaluate_split(test_data, classifier)
 
 
-# Confronta le performance (macro F1) del modello appena addestrato con quelle del modello
-# attualmente in produzione. Se il nuovo modello non è superiore, termina il processo con errore 
-# che farà terminare la pipeline senza procedere con il deploy.
-# Se non esiste ancora un modello in produzione, procede automaticamente con il deploy.
 def validate() -> None:
     """
     Validate that a newly trained model outperforms the production model.
 
-    Compares the macro F1 score of the local model against the production
-    model on Hugging Face Hub. Exits with failure if the new model is not
-    better.
+    Uses stratified sampling for both models to reduce CI time.
 
     Returns:
         None
     """
+    dataset = load_dataset(DATASET_NAME, DATASET_CONFIG)
+    sample_data = _stratified_sample(dataset["test"], SAMPLE_SIZE)
+
     print("Evaluating new model...")
-    new_metrics = evaluate(model_path="./models/sentiment_model")
+    new_metrics = _evaluate_path("./models/sentiment_model", sample_data)
     new_f1 = new_metrics["macro_f1"]
     print(f"New model — Macro F1: {new_f1:.4f}")
 
     try:
         print("Evaluating production model...")
-        prod_metrics = evaluate(model_path=HF_REPO)
+        prod_metrics = _evaluate_path(HF_REPO, sample_data)
         prod_f1 = prod_metrics["macro_f1"]
         print(f"Production model — Macro F1: {prod_f1:.4f}")
 
-        # Se
         if new_f1 > prod_f1:
             print(f"[OK] New model is better ({new_f1:.4f} > {prod_f1:.4f}). Proceeding with deploy.")
         else:
@@ -83,8 +107,6 @@ def validate() -> None:
             sys.exit(1)
 
     except Exception:
-
-        # Se non esiste nessun modello su Hugging Face, si procede al deploy del modello corrente
         print("[INFO] No production model found. Proceeding with deploy.")
 
 
