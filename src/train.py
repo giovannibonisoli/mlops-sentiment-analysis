@@ -16,16 +16,13 @@ BASE_MODEL  = "cardiffnlp/twitter-roberta-base-sentiment-latest"
 # Repository hugging face del modello in produzione
 HF_REPO = os.getenv("HF_REPO", "sentiment-model")
 
-# DIRECTORY DI OUTPUT
 # Questa directory verrà creata se non esiste e verrà usata per salvare temporaneamente il modello che sarà poi usato nello step di valutazione
 OUTPUT_DIR = "./models/sentiment_model"
 
-# DATASET PER L'ALLENAMENTO E LA VALUTAZIONE
 # Di default viene usato il dataset tweet_eval con la configurazione sentiment
 DATASET_NAME = os.getenv("DATASET_NAME", "tweet_eval")
 DATASET_CONFIG = os.getenv("DATASET_CONFIG", "sentiment")
 
-# CONFIGURAZIONE DEL TRAINING
 # Il numero di dati di allenamento viene impostato a 1000
 # come compromesso tra tempo di esecuzione in CI e qualità del training.
 TRAIN_SAMPLES = int(os.getenv("TRAIN_SAMPLES", 1000))
@@ -49,7 +46,6 @@ def tokenize(batch, tokenizer):
     # Il padding è impostato a max_length per garantire che tutti i batch abbiano la stessa lunghezza
     return tokenizer(batch["text"], truncation=True, max_length=512, padding="max_length")
 
-# CALCOLO DELLE METRICHE
 def compute_metrics(eval_pred):
     logits, labels = eval_pred
     preds = np.argmax(logits, axis=-1)
@@ -60,7 +56,7 @@ def compute_metrics(eval_pred):
         "macro_f1": f1_score(labels, preds, average="macro")
     }
 
-# ALLENAMENTO DEL MODELLO
+
 def train() -> None:
     """
     Train and evaluate the sentiment classification model.
@@ -108,7 +104,7 @@ def train() -> None:
     # Viene scelto 16 come batch size in quanto standard per il fine-tuning di modelli transformer pre-addestrati.
     # Tramite eval_strategy="epoch" e save_strategy="epoch" il modello viene valutato e salvato alla fine di ogni epoca.
     # Tramite load_best_model_at_end=True il modello con le migliori metriche viene caricato alla fine dell'allenamento,
-    # Questo viene selezionato in base a macro_f1, poiché in caso di dataste sbilanciato e l'accuracy rischia di essere fuorviante. 
+    # Questo viene selezionato in base a macro_f1, poiché in caso di dataset sbilanciato e l'accuracy rischia di essere fuorviante. 
     args = TrainingArguments(
         output_dir=OUTPUT_DIR,
         num_train_epochs=NUM_EPOCHS,

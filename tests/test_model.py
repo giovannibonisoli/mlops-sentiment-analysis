@@ -1,9 +1,7 @@
 import pytest
 from src.model import load_classifier, predict
 
-# ============================================================
-# TEST — PREDIZIONI SU TESTO SINGOLO
-# ============================================================
+
 # Verifica che predict() riconosca correttamente testi positivi
 def test_predict_positive():
     """
@@ -28,9 +26,7 @@ def test_predict_negative():
     result = predict(classifier, "This is terrible, I hate it.")
     assert result[0] == "negative"
 
-# ============================================================
-# TEST — PREDIZIONI SU BATCH DI TESTI
-# ============================================================
+
 # Verifica che predict() gestisca correttamente un batch di testi
 def test_predict_batch():
     """
@@ -71,9 +67,6 @@ def test_predict_long_text():
     result = predict(classifier, long_text)
     assert result[0] in ["positive", "negative", "neutral"]
 
-# ============================================================
-# TEST — CARICAMENTO DEL CLASSIFICATORE
-# ============================================================
 # Verifica che load_classifier() carichi il modello di default senza errori
 def test_load_classifier_default():
     """

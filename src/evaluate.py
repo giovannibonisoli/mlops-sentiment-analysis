@@ -10,7 +10,6 @@ HF_REPO = os.getenv("HF_REPO")
 LABEL_MAP = {0: "negative", 1: "neutral", 2: "positive"}
 
 
-# FUNZIONE PER LA VALUTAZIONE 
 # Carica il dataset di test, esegue le predizioni usando il classificatore specificato
 # e restituisce un dizionario con accuratezza e macro F1, stampando anche un report dettagliato
 def evaluate(model_path: str | None = None) -> dict[str, float]:
@@ -50,7 +49,6 @@ def evaluate(model_path: str | None = None) -> dict[str, float]:
     return {"accuracy": accuracy, "macro_f1": macro_f1}
 
 
-# FUNZIONE PER LA VALIDAZIONE DI UN MODELLO
 # Confronta le performance (macro F1) del modello appena addestrato con quelle del modello
 # attualmente in produzione. Se il nuovo modello non è superiore, termina il processo con errore 
 # che farà terminare la pipeline senza procedere con il deploy.

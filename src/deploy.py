@@ -4,8 +4,7 @@ from src.model import load_model_and_tokenizer
 MODEL_PATH = os.getenv("MODEL_PATH", "./models/sentiment_model")
 HF_REPO    = os.environ["HF_REPO"]
 HF_TOKEN   = os.environ["HF_TOKEN"]
- 
-# DEPLOY DEL MODELLO ADDRESTRATO
+
 # Carica il modello e il tokenizer addestrato che sono stati precedentemente 
 # salvati localmente  e li pubblica sull'Hugging Face Hub
 def deploy() -> None:

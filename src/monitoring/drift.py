@@ -24,9 +24,7 @@ import numpy as np
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 
-# ============================================================
-# COSTANTI DI CONFIGURAZIONE
-# ============================================================
+
 
 # Path del file CSV contenente i log delle predizioni
 # Formato atteso: colonne "timestamp", "predicted_label", "confidence"
@@ -49,9 +47,7 @@ BASELINE_DISTRIBUTION = {
     "positive": 0.193
 }
 
-# ============================================================
-# CARICAMENTO LOG RECENTI
-# ============================================================
+
 # Carica le predizioni delle ultime N ore dal file CSV.
 # Il timestamp viene normalizzato in UTC se non ha timezone.
 def load_recent_logs(hours: int = 24) -> list[dict[str, str]]:
@@ -80,9 +76,7 @@ def load_recent_logs(hours: int = 24) -> list[dict[str, str]]:
     return rows
 
 
-# ============================================================
-# CARICAMENTO BASELINE PER PSI
-# ============================================================
+
 # Carica i log delle 24-48 ore fa come riferimento per il calcolo del PSI.
 # NOTA: In produzione, questa funzione caricherebbe un file statico
 # con le confidence scores del validation set al momento del training.
@@ -116,9 +110,6 @@ def load_baseline_logs(hours: int = 24) -> list[dict[str, str]]:
     return rows
 
 
-# ============================================================
-# CALCOLO DISTRIBUZIONE SENTIMENT
-# ============================================================
 # Calcola la percentuale di ciascuna classe sentiment nei log forniti.
 # Restituisce un dizionario label -> percentuale (arrotondata a 3 decimali).
 def compute_sentiment_distribution(rows: list[dict[str, str]]) -> dict[str, float]:
@@ -138,9 +129,7 @@ def compute_sentiment_distribution(rows: list[dict[str, str]]) -> dict[str, floa
     total  = sum(counts.values())
     return {label: round(count / total, 3) for label, count in counts.items()}
 
-# ============================================================
-# CALCOLO CONFIDENZA MEDIA
-# ============================================================
+
 # Calcola la confidenza media delle predizioni.
 # Restituisce 0.0 se la lista è vuota, altrimenti media arrotondata a 4 decimali.
 def compute_avg_confidence(rows: list[dict[str, str]]) -> float:
@@ -160,9 +149,7 @@ def compute_avg_confidence(rows: list[dict[str, str]]) -> float:
         return 0.0
     return round(sum(float(row["confidence"]) for row in rows) / len(rows), 4)
 
-# ============================================================
-# CALCOLO POPULATION STABILITY INDEX (PSI)
-# ============================================================
+
 # Calcola il PSI tra due distribuzioni di confidence scores.
 # Formula: Σ ( (%_current_i - %_baseline_i) * ln(%_current_i / %_baseline_i) )
 # Interpretazione:
@@ -215,9 +202,7 @@ def compute_psi(baseline_scores: list[float], current_scores: list[float], bins:
     psi = np.sum((current_pct - baseline_pct) * np.log(current_pct / baseline_pct))
     return round(float(psi), 4)
 
-# ============================================================
-# RILEVAZIONE SHIFT DISTRIBUZIONE CLASSI
-# ============================================================
+
 # Confronta la distribuzione corrente con quella baseline.
 # Segnala shift quando la differenza supera il 15% (soglia empirica).
 # Variazioni inferiori sono considerate normali fluttuazioni giornaliere.
@@ -249,9 +234,6 @@ def check_distribution_shift(current_distribution: dict[str, float]) -> dict[str
     return shifts
 
 
-# ============================================================
-# REPORT DI MONITORAGGIO
-# ============================================================
 # Genera un report completo con:
 #   - numero totale di predizioni analizzate
 #   - distribuzione sentiment corrente
@@ -305,7 +287,7 @@ def run_monitoring_report(hours: int = 24) -> None:
     avg_confidence = compute_avg_confidence(current_rows)
     shifts = check_distribution_shift(distribution)
 
-    # ===== STAMPA REPORT =====
+    # Stampa report
     print(f"\n=== Monitoring Report — last {hours}h ===")
     print(f"Total predictions: {len(current_rows)}")
     print(f"\nSentiment distribution:")

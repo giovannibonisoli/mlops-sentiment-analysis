@@ -13,9 +13,6 @@ from src.monitoring.drift import (
     run_monitoring_report
 )
 
-# ============================================================
-# INTEGRATION TESTS — PIPELINE
-# ============================================================
 # Verifica che il classifier produca predizioni valide su dati reali
 def test_pipeline_end_to_end():
     """
@@ -76,9 +73,6 @@ def test_pipeline_confidence_range(tmp_path):
     os.environ["LOG_FILE"] = "./predictions_log/predictions_log.csv"
     importlib.reload(monitor_module)
 
-# ============================================================
-# INTEGRATION TESTS — EVALUATE
-# ============================================================
 # Verifica che evaluate() ritorni sia accuracy che macro_f1
 def test_evaluate_returns_both_metrics():
     """
@@ -115,9 +109,6 @@ def test_evaluate_returns_valid_macro_f1():
     assert 0.0 <= metrics["macro_f1"] <= 1.0
     assert metrics["macro_f1"] > 0.5
 
-# ============================================================
-# INTEGRATION TESTS — MONITOR
-# ============================================================
 # Verifica che log_predictions() crei il file CSV se non esiste
 def test_log_predictions_creates_file(tmp_path):
     """
@@ -200,9 +191,6 @@ def test_log_predictions_csv_fields(tmp_path):
     os.environ["LOG_FILE"] = "./predictions_log/predictions_log.csv"
     importlib.reload(monitor_module)
 
-# ============================================================
-# INTEGRATION TESTS — DRIFT
-# ============================================================
 # Verifica che compute_sentiment_distribution() calcoli percentuali corrette
 def test_compute_sentiment_distribution():
     """

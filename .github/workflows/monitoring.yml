@@ -13,12 +13,12 @@
 
 name: Monitoring — Sentiment e Drift
 
-on:
-  schedule:
-    # ===== TRIGGER AUTOMATICO =====
-    # Esecuzione schedulata ogni 8 ore (0:00, 8:00, 16:00 UTC)
-    # Permette di monitorare il modello in produzione con cadenza regolare
-    - cron: "0 */8 * * *"
+# on:
+#   schedule:
+#     # ===== TRIGGER AUTOMATICO =====
+#     # Esecuzione schedulata ogni 8 ore (0:00, 8:00, 16:00 UTC)
+#     # Permette di monitorare il modello in produzione con cadenza regolare
+#     - cron: "0 */8 * * *"
 
   # ===== TRIGGER MANUALE =====
   # Permette di testare il sistema di monitoring con diversi scenari:
